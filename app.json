@@ -31,11 +31,6 @@
     "plugins": [
       "expo-notifications"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "ac9139a6-5c73-48e5-8b2a-415642af3407"
-      }
-    },
     "owner": "leemh"
   }
 }
