@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "시세왕",
+    "slug": "sisaewang",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "kr.sisaewang.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "농산물 가격 알림을 받기 위해 알림 권한이 필요합니다.",
+        "NSLocationWhenInUseUsageDescription": "가까운 도매시장 정보를 제공하기 위해 위치 정보가 필요합니다."
+      }
+    },
+    "android": {
+      "package": "kr.sisaewang.app",
+      "versionCode": 1,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ac9139a6-5c73-48e5-8b2a-415642af3407"
+      }
+    },
+    "owner": "leemh"
+  }
+}
