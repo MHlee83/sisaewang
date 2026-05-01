@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "시세왕",
-    "slug": "sisaewang",
+    "slug": "sisaewang-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -31,6 +31,11 @@
     "plugins": [
       "expo-notifications"
     ],
-    "owner": "leemh"
+    "owner": "leemh",
+    "extra": {
+      "eas": {
+        "projectId": "9bb9b5aa-7052-4b61-82f9-14527c0125b0"
+      }
+    }
   }
 }
