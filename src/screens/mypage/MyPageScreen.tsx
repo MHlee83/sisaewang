@@ -204,10 +204,19 @@ export default function MyPageScreen() {
               <Text style={styles.toolArrow}>›</Text>
             </TouchableOpacity>
           )}
+          {/* 도매상 손익 계산기 — 전 유형 공개 */}
+          <TouchableOpacity style={[styles.toolCard, { borderColor: '#1B8A4E', borderWidth: 1 }]} onPress={() => navigation.navigate('ProfitCalculator')} activeOpacity={0.7}>
+            <Text style={styles.toolEmoji}>💰</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toolName}>도매 손익 계산기 <Text style={{ fontSize: 10, color: '#1B8A4E', fontWeight: '700' }}>NEW</Text></Text>
+              <Text style={styles.toolDesc}>매입가·박스 수 입력 → 마진·ROI·손익분기 자동 계산</Text>
+            </View>
+            <Text style={styles.toolArrow}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* 절약 기록 */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingBottom: 20, marginBottom: 16 }]}>
           <Text style={styles.sectionTitle}>💰 나의 절약 기록</Text>
           {/* 요약 */}
           <View style={styles.savingsSummary}>
@@ -240,14 +249,14 @@ export default function MyPageScreen() {
           )}
         </View>
 
-        {/* 구독 */}
+        {/* 오픈 베타 안내 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💳 구독 관리</Text>
-          <TouchableOpacity style={[styles.upgradeButton, { marginTop: 12 }]}>
+          <Text style={styles.sectionTitle}>🎉 오픈 베타 이용 중</Text>
+          <View style={[styles.upgradeButton, { marginTop: 12 }]}>
             <Text style={styles.upgradeText}>
-              {plan === 'FREE' ? '프리미엄 업그레이드 (월 3,900원)' : `현재 ${plan} 플랜 이용 중`}
+              베타 기간 중 관심 품목 최대 3개까지 무료 제공
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* 로그아웃 */}

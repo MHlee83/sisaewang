@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator,
+  Dimensions, Alert,
 } from 'react-native';
+
+const SCREEN_W = Dimensions.get('window').width;
 import { MOCK_PRICES, MOCK_POSTS } from '@/services/mockData';
 import {
   getRetailPrice, getPriceLabel,
@@ -13,10 +16,12 @@ import type { TabParamList } from '@/navigation/TabNavigator';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/RootNavigator';
 import { useQuery } from '@tanstack/react-query';
-import { COLORS, CHART_PERIODS, RECOMMENDATION_CONFIG } from '@/constants';
+import { COLORS, CHART_PERIODS, RECOMMENDATION_CONFIG, PLAN_LIMITS } from '@/constants';
 import { getAuctionHistory, getSurveyPrices, compareMarketPrices } from '@/services/priceService';
 import { getRecommendation } from '@/services/recommendationService';
 import { useAuthStore } from '@/store/authStore';
+import { useFilterStore } from '@/store/filterStore';
+import FavoriteButton from '@/components/common/FavoriteButton';
 import dayjs from 'dayjs';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
@@ -61,13 +66,15 @@ function generateMockMarkets(basePrice: number) {
 // ──────────────────────────────────────────────
 // 목 가격 히스토리 생성 (기준가 기반 랜덤 워크)
 // ──────────────────────────────────────────────
-function generateMockHistory(basePrice: number, days: number) {
+function generateMockHistory(basePrice: number, days: number): { date: string; price: number }[] {
   const result: { date: string; price: number }[] = [];
   let price = basePrice;
   for (let i = days; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    price = Math.max(100, price + (Math.random() - 0.48) * basePrice * 0.04);
+    const seed = (i * 7 + basePrice) % 100;
+    const change = (((seed % 11) - 5) / 100) * basePrice * 0.045;
+    price = Math.max(100, price + change);
     result.push({
       date: `${d.getMonth() + 1}/${d.getDate()}`,
       price: Math.round(price),
@@ -79,12 +86,12 @@ function generateMockHistory(basePrice: number, days: number) {
 // ──────────────────────────────────────────────
 // 순수 RN 라인 차트
 // ──────────────────────────────────────────────
-const CHART_W = 320;
-const CHART_H = 100;
+const CHART_W = SCREEN_W - 24;   // 화면 너비 기준 — 날짜 레이블 잘림 방지
+const CHART_H = 110;
 const PAD_L = 48;
-const PAD_B = 20;
+const PAD_B = 24;                 // X축 레이블 여유 공간
 const PAD_T = 8;
-const PAD_R = 12;
+const PAD_R = 16;
 
 function PriceLineChart({ data }: { data: { date: string; price: number }[] }) {
   if (!data.length) return null;
@@ -177,15 +184,27 @@ function PriceLineChart({ data }: { data: { date: string; price: number }[] }) {
           backgroundColor: isUp ? COLORS.surgeStrong : COLORS.dropStrong,
         }]} />
 
-        {/* X축 레이블 */}
-        {labelIdxs.map((idx) => (
-          <Text key={idx} style={[chartStyles.xLabel, {
-            left: toX(idx) - 16,
-            top: CHART_H - PAD_B + 4,
-          }]}>
-            {data[idx]?.date}
-          </Text>
-        ))}
+        {/* X축 레이블 — 날짜 잘림 방지: width 충분히, 끝 레이블 right-align */}
+        {labelIdxs.map((idx, li) => {
+          const isLast  = li === labelIdxs.length - 1;
+          const isFirst = li === 0;
+          return (
+            <Text
+              key={idx}
+              style={[chartStyles.xLabel, {
+                left: isLast
+                  ? toX(idx) - 32          // 마지막: 왼쪽으로 밀기
+                  : isFirst
+                    ? toX(idx) - 4         // 첫번째: 약간만 이동
+                    : toX(idx) - 18,
+                top: CHART_H - PAD_B + 5,
+                textAlign: isLast ? 'right' : isFirst ? 'left' : 'center',
+              }]}
+            >
+              {data[idx]?.date}
+            </Text>
+          );
+        })}
       </View>
     </View>
   );
@@ -198,7 +217,7 @@ const chartStyles = StyleSheet.create({
   summaryLabel:{ fontSize: 12, color: COLORS.textDisabled },
   gridLine:    { position: 'absolute', height: 1, backgroundColor: '#F0F0F0' },
   yLabel:      { position: 'absolute', fontSize: 9, color: COLORS.textDisabled, textAlign: 'right' },
-  xLabel:      { position: 'absolute', fontSize: 9, color: COLORS.textDisabled, width: 32, textAlign: 'center' },
+  xLabel:      { position: 'absolute', fontSize: 10, color: COLORS.textDisabled, width: 36 },
   dot:         { position: 'absolute', width: 10, height: 10, borderRadius: 5 },
 });
 
@@ -208,25 +227,46 @@ export default function ItemDetailScreen() {
   const { itemCode, itemName } = route.params;
   const [selectedPeriod, setSelectedPeriod] = useState(30);
   const { user } = useAuthStore();
+  const { favoriteItemCodes, toggleFavorite } = useFilterStore();
 
   const userType = user?.userType;
   const isFarmer = userType === 'FARMER';
   const isBuyer  = userType === 'BUYER';
 
-  // 헤더 우측에 알림 설정 버튼 배치
+  const plan = (user?.plan ?? 'FREE') as keyof typeof PLAN_LIMITS;
+  const maxFavorites = PLAN_LIMITS[plan]?.maxItems ?? 3;
+  const isFavorite = favoriteItemCodes.includes(itemCode);
+
+  const handleFavoritePress = () => {
+    if (!isFavorite && favoriteItemCodes.length >= maxFavorites) {
+      Alert.alert('베타 안내', `오픈 베타 중 관심 품목은 최대 ${maxFavorites}개까지 등록 가능합니다.`);
+      return;
+    }
+    toggleFavorite(itemCode);
+  };
+
+  // 헤더 우측에 즐겨찾기 + 알림 버튼 배치
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          style={headerStyles.alertBtn}
-          onPress={() => navigation.navigate('AlertCreate', { itemCode, itemName })}
-          activeOpacity={0.7}
-        >
-          <Text style={headerStyles.alertBtnText}>🔔 시세 알림</Text>
-        </TouchableOpacity>
+        <View style={headerStyles.headerBtns}>
+          <FavoriteButton
+            isFavorite={isFavorite}
+            onPress={handleFavoritePress}
+            size="lg"
+            style={headerStyles.favBtn}
+          />
+          <TouchableOpacity
+            style={headerStyles.alertBtn}
+            onPress={() => navigation.navigate('AlertCreate', { itemCode, itemName })}
+            activeOpacity={0.7}
+          >
+            <Text style={headerStyles.alertBtnText}>🔔 시세 알림</Text>
+          </TouchableOpacity>
+        </View>
       ),
     });
-  }, [navigation, itemCode, itemName]);
+  }, [navigation, itemCode, itemName, isFavorite, favoriteItemCodes.length]);
 
   // 가격 이력
   const { data: historyData, isLoading: historyLoading } = useQuery({
@@ -547,6 +587,7 @@ export default function ItemDetailScreen() {
         <Text style={styles.fabIcon}>✏️</Text>
         <Text style={styles.fabText}>글쓰기</Text>
       </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
@@ -738,6 +779,14 @@ const styles = StyleSheet.create({
 });
 
 const headerStyles = StyleSheet.create({
+  headerBtns: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 4,
+  },
+  favBtn: {
+    width: 36, height: 36, borderRadius: 8,
+    backgroundColor: '#FFF8E1',
+    alignItems: 'center', justifyContent: 'center',
+  },
   alertBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -745,7 +794,6 @@ const headerStyles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    marginRight: 4,
   },
   alertBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });

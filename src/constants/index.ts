@@ -1,5 +1,6 @@
 // ===== API =====
-export const API_BASE_URL = 'https://api.sisaewang.kr/v1';
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? 'https://sisaewang-production.up.railway.app/v1';
 
 // ===== 색상 (등락률 규칙) =====
 export const COLORS = {
@@ -34,6 +35,7 @@ export const CATEGORIES = [
   { code: '300', name: '수산', emoji: '🐟' },
   { code: '400', name: '축산', emoji: '🥩' },
   { code: '500', name: '곡물', emoji: '🌾' },
+  { code: '600', name: '버섯', emoji: '🍄' },
 ] as const;
 
 // ===== 주요 도매시장 =====

@@ -16,6 +16,7 @@ export type RootStackParamList = {
   BasketCalculator:    undefined;
   ShipmentCalculator:  undefined;
   CostCalculator:      undefined;
+  ProfitCalculator:    undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,6 +70,11 @@ export default function RootNavigator() {
               name="CostCalculator"
               component={require('@/screens/tools/CostCalculatorScreen').default}
               options={{ headerShown: true, title: '🍽️ 원가 계산기' }}
+            />
+            <Stack.Screen
+              name="ProfitCalculator"
+              component={require('@/screens/tools/ProfitCalculatorScreen').default}
+              options={{ headerShown: true, title: '💰 도매 손익 계산기' }}
             />
           </>
         )}

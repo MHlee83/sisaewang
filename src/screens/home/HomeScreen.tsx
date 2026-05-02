@@ -19,9 +19,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { COLORS, CATEGORIES, MAIN_MARKETS } from '@/constants';
+import { COLORS, CATEGORIES, MAIN_MARKETS, PLAN_LIMITS } from '@/constants';
 import { useFilterStore } from '@/store/filterStore';
 import { useAuthStore } from '@/store/authStore';
+import FavoriteButton from '@/components/common/FavoriteButton';
 import {
   getDisplayPrice, getPriceLabel, getPriceSubLabel,
   getRecommendationText, getRecommendationColor, getRetailPrice,
@@ -105,12 +106,8 @@ function CategoryChips({
 }) {
   const all = [{ code: '', name: '전체', emoji: '' }, ...CATEGORIES];
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.chipsScroll}
-      contentContainerStyle={styles.chipsContent}
-    >
+    // 이모지 제거 + 크기 축소 → 7개 전부 한 줄에 표시
+    <View style={styles.chipsRow}>
       {all.map((cat) => (
         <TouchableOpacity
           key={cat.code}
@@ -119,11 +116,11 @@ function CategoryChips({
           activeOpacity={0.7}
         >
           <Text style={[styles.chipText, selected === cat.code && styles.chipTextActive]}>
-            {cat.emoji ? cat.emoji + ' ' : ''}{cat.name}
+            {cat.name}
           </Text>
         </TouchableOpacity>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -314,12 +311,14 @@ const guideStyles = StyleSheet.create({
 });
 
 function SurgeCards() {
-  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const upItems = MOCK_SURGE_ITEMS.filter((x) => x.direction === 'up');
+  const dnItems = MOCK_SURGE_ITEMS.filter((x) => x.direction === 'down');
   return (
     <>
       <View style={styles.sectionRow}>
         <Text style={styles.sectionTitle}>급등락 순위</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Analysis')} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => (navigation as any).navigate('Analysis')} activeOpacity={0.7}>
           <Text style={styles.sectionMore}>전체보기</Text>
         </TouchableOpacity>
       </View>
@@ -329,23 +328,33 @@ function SurgeCards() {
         contentContainerStyle={styles.surgeScroll}
       >
         {MOCK_SURGE_ITEMS.map((item) => {
-          const isUp = item.direction === 'up';
+          const isUp  = item.direction === 'up';
           const color = isUp ? COLORS.surgeStrong : COLORS.dropStrong;
-          const upItems = MOCK_SURGE_ITEMS.filter((x) => x.direction === 'up');
-          const dnItems = MOCK_SURGE_ITEMS.filter((x) => x.direction === 'down');
-          const rank = isUp
-            ? upItems.indexOf(item) + 1
-            : dnItems.indexOf(item) + 1;
+          const rank  = isUp ? upItems.indexOf(item) + 1 : dnItems.indexOf(item) + 1;
           const rankLabel = `${rank}위 ${isUp ? '급등' : '급락'}`;
+          // MOCK_PRICES에서 itemCode 조회
+          const matched = MOCK_PRICES.find((p) => p.itemName === item.name);
           return (
-            <View key={item.name} style={styles.surgeCard}>
+            <TouchableOpacity
+              key={item.name}
+              style={styles.surgeCard}
+              activeOpacity={0.75}
+              onPress={() => {
+                if (matched) {
+                  navigation.navigate('ItemDetail', {
+                    itemCode: matched.itemCode,
+                    itemName: matched.itemName,
+                  });
+                }
+              }}
+            >
               <Text style={[styles.surgeRank, { color }]}>{rankLabel}</Text>
               <Text style={styles.surgeName}>{item.name}</Text>
               <Text style={styles.surgePrice}>{formatPrice(item.price)}</Text>
               <Text style={[styles.surgeRate, { color }]}>
                 {isUp ? '▲' : '▼'} {Math.abs(item.changeRate).toFixed(1)}%
               </Text>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </ScrollView>
@@ -432,11 +441,13 @@ function NewsSection() {
 function ItemCard({
   item,
   onPress,
+  onFavoritePress,
   isFavorite,
   userType,
 }: {
   item: (typeof MOCK_PRICES)[0];
   onPress: () => void;
+  onFavoritePress: () => void;
   isFavorite?: boolean;
   userType?: string;
 }) {
@@ -447,7 +458,6 @@ function ItemCard({
   const displayPrice = getDisplayPrice(item.avgPrice, item.category, userType as any);
   const priceLabel = getPriceLabel(userType as any);
 
-  // 유저 타입별 추천 문구
   const rec = getRecommendationText(item.itemName, item.avgPrice, item.avgYearPrice, rate, userType as any);
   const recColor = getRecommendationColor(rec.type);
 
@@ -457,14 +467,21 @@ function ItemCard({
       onPress={onPress}
       activeOpacity={0.75}
     >
-      <View style={styles.itemThumb}>
-        <Image source={{ uri: item.thumbnail }} style={styles.itemThumbImg} />
-        {isFavorite && <View style={styles.itemFavBadge}><Text style={styles.itemFavStar}>⭐</Text></View>}
+      {/* 썸네일 + 즐겨찾기 버튼 묶음 — overflow:hidden 밖에 버튼 배치 */}
+      <View style={styles.itemThumbWrap}>
+        <View style={styles.itemThumb}>
+          <Image source={{ uri: item.thumbnail }} style={styles.itemThumbImg} />
+        </View>
+        <FavoriteButton
+          isFavorite={!!isFavorite}
+          onPress={onFavoritePress}
+          size="sm"
+          style={styles.itemFavBtn}
+        />
       </View>
       <View style={styles.itemInfo}>
         <Text style={styles.itemName}>{item.itemName}</Text>
         <Text style={styles.itemSub}>{item.gradeCode} · {item.totalQty}kg</Text>
-        {/* 유저 타입별 추천 뱃지 */}
         {rec.type !== 'neutral' && (
           <View style={[styles.recBadge, { backgroundColor: recColor.bg }]}>
             <Text style={[styles.recBadgeText, { color: recColor.text }]} numberOfLines={1}>
@@ -497,15 +514,28 @@ function ItemCard({
 // ──────────────────────────────────────────────
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { selectedCategoryCode, setCategory, favoriteItemCodes } = useFilterStore();
+  const { selectedCategoryCode, setCategory, favoriteItemCodes, toggleFavorite } = useFilterStore();
   const { user } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCode, setSelectedMarketCode] = useState('110001'); // 기본: 가락
+  const [selectedMarketCode, setSelectedMarketCode] = useState('110001');
   const [marketModalVisible, setMarketModalVisible] = useState(false);
-
   const selectedMarketName = MAIN_MARKETS.find((m) => m.code === selectedMarketCode)?.name ?? '가락';
   const userType = user?.userType;
+
+  // 플랜별 관심 품목 한도
+  const plan = (user?.plan ?? 'FREE') as keyof typeof PLAN_LIMITS;
+  const maxFavorites = PLAN_LIMITS[plan]?.maxItems ?? 3;
+
+  // 즐겨찾기 토글 핸들러 (한도 초과 시 베타 안내)
+  const handleFavoritePress = useCallback((itemCode: string) => {
+    const isAlreadyFav = favoriteItemCodes.includes(itemCode);
+    if (!isAlreadyFav && favoriteItemCodes.length >= maxFavorites) {
+      Alert.alert('베타 안내', `오픈 베타 중 관심 품목은 최대 ${maxFavorites}개까지 등록 가능합니다.`);
+      return;
+    }
+    toggleFavorite(itemCode);
+  }, [favoriteItemCodes, maxFavorites, toggleFavorite]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -536,14 +566,10 @@ export default function HomeScreen() {
   const hasFavorites = !searchQuery.trim() && favoriteItemCodes.length > 0;
   const favCount = sortedItems.filter((p) => favoriteItemCodes.includes(p.itemCode)).length;
 
+  // FlatList 헤더: ActionGuide + Surge + Ticker + 섹션 타이틀만
+  // SearchBar / CategoryChips 는 FlatList 밖에서 렌더 (Android 터치 충돌 방지)
   const ListHeader = (
     <>
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        onClear={() => setSearchQuery('')}
-      />
-      <CategoryChips selected={selectedCategoryCode} onSelect={setCategory} />
       <ActionGuideCard
         userType={userType}
         favoriteItemCodes={favoriteItemCodes}
@@ -579,6 +605,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
+
+      {/* ── 검색 + 카테고리: FlatList 밖에서 고정 렌더 (Android 터치 보장) ── */}
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onClear={() => setSearchQuery('')}
+      />
+      <CategoryChips selected={selectedCategoryCode} onSelect={setCategory} />
 
       {/* 시장 선택 모달 */}
       <Modal
@@ -624,6 +658,7 @@ export default function HomeScreen() {
       <FlatList
         data={sortedItems}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => (
           <ItemCard
             item={item}
@@ -635,6 +670,7 @@ export default function HomeScreen() {
                 itemName: item.itemName,
               })
             }
+            onFavoritePress={() => handleFavoritePress(item.itemCode)}
           />
         )}
         ListHeaderComponent={ListHeader}
@@ -654,6 +690,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
+
     </SafeAreaView>
   );
 }
@@ -680,19 +717,29 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: COLORS.textPrimary, padding: 0 },
   searchClear: { fontSize: 14, color: COLORS.textDisabled, paddingLeft: 4 },
 
-  // Chips
-  chipsScroll: { backgroundColor: COLORS.surface },
-  chipsContent: { paddingHorizontal: 12, paddingBottom: 10, paddingTop: 2, gap: 6 },
+  // Chips — 이모지 없이 7개 한 줄 고정
+  chipsRow: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 10,
+    paddingBottom: 8,
+    paddingTop: 2,
+    gap: 5,
+    justifyContent: 'space-between',
+  },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    flex: 1,
+    paddingVertical: 9,
     borderRadius: 100,
     backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.divider,
+    alignItems: 'center',
+    minHeight: 36,
+    justifyContent: 'center',
   },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+  chipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, lineHeight: 16, includeFontPadding: false } as any,
   chipTextActive: { color: '#fff' },
 
   // Section header
@@ -825,25 +872,38 @@ const styles = StyleSheet.create({
     borderColor: '#FDD835',
     borderWidth: 1.5,
   },
+  // 썸네일 + 별 버튼을 담는 래퍼 (overflow:hidden 없음 → 별이 잘리지 않음)
+  itemThumbWrap: {
+    width: 52,
+    height: 52,
+    position: 'relative',
+  },
   itemThumb: {
     width: 52,
     height: 52,
     borderRadius: 10,
     backgroundColor: '#F0F0F0',
     overflow: 'hidden',
-    position: 'relative',
   },
   itemThumbImg: {
     width: 52,
     height: 52,
     borderRadius: 10,
   },
-  itemFavBadge: {
+  itemFavBtn: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -8,
+    right: -8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 12,
+    padding: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+    zIndex: 10,
   },
-  itemFavStar: { fontSize: 10 },
   itemInfo: { flex: 1, minWidth: 0 },
   itemName: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary },
   itemSub: { fontSize: 11, color: COLORS.textDisabled, marginTop: 2 },
