@@ -13,7 +13,7 @@ const AlertCreateSchema = z.object({
 export async function getAlerts(req: AuthRequest, res: Response): Promise<void> {
   const alerts = await prisma.alert.findMany({
     where: { userId: req.user!.id },
-    include: {h
+    include: {
       item:   { select: { itemName: true } },
       market: { select: { name: true } },
     },
