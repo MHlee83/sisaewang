@@ -1,14 +1,27 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { COLORS } from '@/constants';
 import { useAuthStore } from '@/store/authStore';
+import { registerForPushNotifications, saveFcmToken } from '@/services/notificationService';
 
 export default function NotificationPermissionScreen() {
   const { completeOnboarding } = useAuthStore();
+  const [loading, setLoading] = useState(false);
 
   const handleAllow = async () => {
-    // TODO: expo-notifications로 권한 요청
-    completeOnboarding(); // RootNavigator가 자동으로 Main으로 전환
+    setLoading(true);
+    try {
+      const token = await registerForPushNotifications();
+      if (token) {
+        await saveFcmToken(token);
+        console.log('[Onboarding] FCM 토큰 등록 완료');
+      }
+    } catch (err) {
+      console.warn('[Onboarding] FCM 등록 실패 (무시됨):', err);
+    } finally {
+      setLoading(false);
+      completeOnboarding();
+    }
   };
 
   const goToMain = () => {
@@ -25,11 +38,18 @@ export default function NotificationPermissionScreen() {
           나중에 설정에서도 변경할 수 있어요.
         </Text>
 
-        <TouchableOpacity style={styles.button} onPress={handleAllow}>
-          <Text style={styles.buttonText}>알림 허용</Text>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleAllow}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.buttonText}>알림 허용</Text>
+          }
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.skipButton} onPress={goToMain}>
+        <TouchableOpacity style={styles.skipButton} onPress={goToMain} disabled={loading}>
           <Text style={styles.skipText}>나중에 설정</Text>
         </TouchableOpacity>
       </View>
@@ -51,6 +71,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   skipButton: { paddingVertical: 12 },
   skipText: { fontSize: 14, color: COLORS.textSecondary },

@@ -5,21 +5,52 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sisaewang-production.up.railway.app/v1",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAAK4g8DY6VbYnl_gqpe3lT58s4fr2HkJA",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sisaewang-e864a.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "sisaewang-e864a",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sisaewang-e864a.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "154225470261",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:154225470261:web:13612768f67734c096ba7c"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sisaewang-production.up.railway.app/v1",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAAK4g8DY6VbYnl_gqpe3lT58s4fr2HkJA",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sisaewang-e864a.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "sisaewang-e864a",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sisaewang-e864a.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "154225470261",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:154225470261:web:13612768f67734c096ba7c"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sisaewang-production.up.railway.app/v1",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAAK4g8DY6VbYnl_gqpe3lT58s4fr2HkJA",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sisaewang-e864a.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "sisaewang-e864a",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sisaewang-e864a.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "154225470261",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:154225470261:web:13612768f67734c096ba7c"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json"
+      }
+    }
   }
 }

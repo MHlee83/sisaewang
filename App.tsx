@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,7 @@ import { auth } from '@/utils/firebase';
 import RootNavigator from '@/navigation/RootNavigator';
 import IntroScreen from '@/screens/onboarding/IntroScreen';
 import { useAuthStore } from '@/store/authStore';
+import { addNotificationListeners } from '@/services/notificationService';
 import type { User } from '@/types';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -23,6 +24,17 @@ const queryClient = new QueryClient({
 export default function App() {
   const { setUser, setLoading } = useAuthStore();
   const [showIntro, setShowIntro] = useState<boolean | null>(null); // null = 아직 확인 중
+
+  // 알림 리스너
+  useEffect(() => {
+    const unsubscribeNotifications = addNotificationListeners(
+      (notification) => {
+        // 포그라운드 알림 수신 처리 (필요 시 Toast 표시 등)
+        console.log('[App] 알림 수신:', notification.request.content.title);
+      },
+    );
+    return () => unsubscribeNotifications();
+  }, []);
 
   useEffect(() => {
     let splashHidden = false;
