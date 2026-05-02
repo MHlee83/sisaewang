@@ -69,7 +69,7 @@ export async function getAuctionPrices(req: Request, res: Response): Promise<voi
 
 // ===== 경락가격 이력 =====
 export async function getAuctionHistory(req: Request, res: Response): Promise<void> {
-  const { itemCode } = req.params;
+    const itemCode = String(req.params.itemCode);
   const { marketCode, gradeCode, startDate, endDate } = req.query as Record<string, string>;
 
   const start = startDate ? new Date(startDate) : dayjs().subtract(30, 'day').toDate();
