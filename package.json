@@ -1,0 +1,14 @@
+{
+  "name": "sisaewang",
+  "version": "1.0.0",
+  "private": true,
+  "description": "시세왕 — 농수축산물 실시간 가격 정보 플랫폼",
+  "scripts": {
+    "mobile": "cd apps/mobile && npx expo start",
+    "backend": "cd apps/backend && npm run dev",
+    "backend:build": "cd apps/backend && npm run build"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
