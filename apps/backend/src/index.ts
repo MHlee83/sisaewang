@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
 import { prisma } from './utils/prisma';
-import { redis } from './utils/redis';
+import { redis, isRedisEnabled } from './utils/redis';
 import { logger } from './utils/logger';
 import { initFirebase } from './utils/firebase';
 import { startCronJobs } from './jobs';
@@ -23,32 +23,31 @@ const app = express();
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const API_VERSION = process.env.API_VERSION ?? 'v1';
 
-// ===== 미들웨어 =====
-
 app.use(helmet());
 app.use(cors({
-  origin: (process.env.ALLOWED_ORIGINS ?? '').split(','),
-  credentials: true,
+    origin: (process.env.ALLOWED_ORIGINS ?? '*').split(','),
+    credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
 
-// Rate Limiting
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15분
-  max: 300,
-  message: { error: 'TOO_MANY_REQUESTS', message: '잠시 후 다시 시도해주세요.' },
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    message: { error: 'TOO_MANY_REQUESTS', message: '잠시 후 다시 시도해주세요.' },
 }));
 
 // ===== 헬스체크 =====
 app.get('/health', async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    await redis.ping();
-    res.json({ status: 'ok', db: 'ok', redis: 'ok', ts: new Date().toISOString() });
-  } catch (err) {
-    res.status(503).json({ status: 'error', message: (err as Error).message });
-  }
+    try {
+          await prisma.$queryRaw`SELECT 1`;
+          const redisStatus = isRedisEnabled
+            ? await redis.ping().then(() => 'ok').catch(() => 'error')
+                  : 'disabled';
+          res.json({ status: 'ok', db: 'ok', redis: redisStatus, ts: new Date().toISOString() });
+    } catch (err) {
+          res.status(503).json({ status: 'error', message: (err as Error).message });
+    }
 });
 
 // ===== API 라우터 =====
@@ -66,34 +65,42 @@ app.use(`/${API_VERSION}`, router);
 
 // ===== 에러 핸들러 =====
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
-  res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: '서버 오류가 발생했습니다.' });
+    logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: '서버 오류가 발생했습니다.' });
 });
 
 // ===== 서버 시작 =====
 async function bootstrap() {
-  try {
-    await prisma.$connect();
-    logger.info('✅ DB 연결 성공');
+    try {
+          await prisma.$connect();
+          logger.info('DB connected');
 
-    await redis.ping();
-    logger.info('✅ Redis 연결 성공');
+      if (isRedisEnabled) {
+              await redis.ping();
+              logger.info('Redis connected');
+      } else {
+              logger.warn('Redis disabled — REDIS_URL not set');
+      }
 
-    initFirebase();
-    logger.info('✅ Firebase Admin 초기화');
+      try {
+              initFirebase();
+              logger.info('Firebase Admin initialized');
+      } catch (firebaseErr) {
+              logger.warn('Firebase init failed (push notifications disabled):', firebaseErr);
+      }
 
-    if (process.env.NODE_ENV === 'production') {
-      startCronJobs();
-      logger.info('✅ Cron Jobs 시작');
+      if (process.env.NODE_ENV === 'production') {
+              startCronJobs();
+              logger.info('Cron Jobs started');
+      }
+
+      app.listen(PORT, () => {
+              logger.info(`Server running on port ${PORT} — /${API_VERSION}`);
+      });
+    } catch (err) {
+          logger.error('Server startup failed:', err);
+          process.exit(1);
     }
-
-    app.listen(PORT, () => {
-      logger.info(`🚀 시세왕 API 서버 시작 — http://localhost:${PORT}/${API_VERSION}`);
-    });
-  } catch (err) {
-    logger.error('❌ 서버 시작 실패:', err);
-    process.exit(1);
-  }
 }
 
 bootstrap();
