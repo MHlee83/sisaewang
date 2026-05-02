@@ -81,10 +81,36 @@ export async function reorderUserItems(req: AuthRequest, res: Response): Promise
   await Promise.all(
     orders.map(({ id, sortOrder }) =>
       prisma.userItem.updateMany({
-        where: { id: BigInt(id), userId: req.user!.id },
-        data:  { sortOrder },
-      })
-    )
+        where:  { id: BigInt(id), userId: req.user!.id },
+        data:   { sortOrder },
+      }),
+    ),
   );
   res.status(204).send();
 }
+
+// ── PATCH /v1/users/me — userType 업데이트 ───────────────────────
+export async function updateMe(req: AuthRequest, res: Response): Promise<void> {
+  const { userType } = req.body as { userType?: string };
+  if (!userType) { res.status(400).json({ error: 'INVALID_INPUT' }); return; }
+
+  const updated = await prisma.user.update({
+    where: { id: req.user!.id },
+    data:  { userType: userType as any },
+    select: { id: true, userType: true },
+  });
+  res.json(updated);
+}
+
+// ── PATCH /v1/users/me/fcm-token — FCM 토큰 저장 ────────────────
+export async function updateFcmToken(req: AuthRequest, res: Response): Promise<void> {
+  const { fcmToken } = req.body as { fcmToken?: string };
+  if (!fcmToken) { res.status(400).json({ error: 'INVALID_INPUT' }); return; }
+
+  await prisma.user.update({
+    where: { id: req.user!.id },
+    data:  { fcmToken },
+  });
+  res.status(204).send();
+}
+  

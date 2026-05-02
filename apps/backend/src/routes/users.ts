@@ -3,6 +3,8 @@ import { requireAuth } from '../middlewares/auth';
 import { checkItemLimit } from '../middlewares/planGuard';
 import {
   getMe,
+  updateMe,
+  updateFcmToken,
   getUserItems,
   addUserItem,
   removeUserItem,
@@ -11,8 +13,14 @@ import {
 
 const router = Router();
 
-// GET /v1/users/me
+// GET  /v1/users/me
 router.get('/me', requireAuth, getMe);
+
+// PATCH /v1/users/me — userType 업데이트
+router.patch('/me', requireAuth, updateMe);
+
+// PATCH /v1/users/me/fcm-token
+router.patch('/me/fcm-token', requireAuth, updateFcmToken);
 
 // GET /v1/users/me/items
 router.get('/me/items', requireAuth, getUserItems);
