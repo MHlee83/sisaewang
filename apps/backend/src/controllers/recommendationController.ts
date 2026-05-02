@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import { logger } from '../utils/logger';
 
 export async function getRecommendation(req: Request, res: Response): Promise<void> {
-    const itemCode = String(req.params.itemCode);
+  const { itemCode } = req.params;
   const targetDate   = (req.query.targetDate as string) ?? dayjs().format('YYYY-MM-DD');
 
   const cacheKey = CacheKeys.recommendation(itemCode, targetDate);

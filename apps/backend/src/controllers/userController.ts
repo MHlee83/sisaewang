@@ -69,7 +69,7 @@ export async function addUserItem(req: AuthRequest, res: Response): Promise<void
 }
 
 export async function removeUserItem(req: AuthRequest, res: Response): Promise<void> {
-    const id = BigInt(String(req.params.id));
+  const id = BigInt(req.params.id);
   await prisma.userItem.deleteMany({ where: { id, userId: req.user!.id } });
   res.status(204).send();
 }

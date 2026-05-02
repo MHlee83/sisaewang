@@ -52,7 +52,7 @@ export async function createAlert(req: AuthRequest, res: Response): Promise<void
 }
 
 export async function updateAlert(req: AuthRequest, res: Response): Promise<void> {
-    const id       = BigInt(String(req.params.id));
+  const id       = BigInt(req.params.id);
   const { isActive } = req.body as { isActive: boolean };
 
   await prisma.alert.updateMany({
@@ -63,7 +63,7 @@ export async function updateAlert(req: AuthRequest, res: Response): Promise<void
 }
 
 export async function deleteAlert(req: AuthRequest, res: Response): Promise<void> {
-    const id = BigInt(String(req.params.id));
+  const id = BigInt(req.params.id);
   await prisma.alert.deleteMany({ where: { id, userId: req.user!.id } });
   res.status(204).send();
 }

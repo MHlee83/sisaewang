@@ -36,7 +36,7 @@ export async function getItems(req: Request, res: Response): Promise<void> {
 }
 
 export async function getItemDetail(req: Request, res: Response): Promise<void> {
-    const itemCode = String(req.params.itemCode);
+  const { itemCode } = req.params;
 
   const item = await prisma.item.findUnique({ where: { itemCode } });
   if (!item) { res.status(404).json({ error: 'ITEM_NOT_FOUND' }); return; }
