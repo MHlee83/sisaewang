@@ -63,11 +63,46 @@ app.get('/', (_req, res) => {
   .btn-outline:hover{background:rgba(255,255,255,0.1);}
 
   /* MOCKUPS */
-  .mockups{display:flex;justify-content:center;gap:20px;margin-top:52px;flex-wrap:wrap;}
-  .phone{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:28px;padding:20px 16px;width:160px;text-align:center;}
-  .phone-icon{font-size:2.4rem;margin-bottom:10px;}
-  .phone-label{font-size:11px;opacity:.7;line-height:1.5;}
-  .phone-title{font-size:13px;font-weight:600;margin-bottom:6px;}
+  .mockups{display:flex;justify-content:center;gap:16px;margin-top:52px;flex-wrap:wrap;align-items:flex-end;}
+  .phone{background:#1a1a1a;border:2px solid #333;border-radius:32px;width:155px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .phone-bar{background:#111;padding:8px 14px 6px;display:flex;justify-content:space-between;align-items:center;}
+  .phone-time{color:#fff;font-size:10px;font-weight:600;}
+  .phone-dots{color:#666;font-size:10px;letter-spacing:2px;}
+  .phone-body{background:#111;padding:10px 10px 14px;}
+  .phone-title{color:#fff;font-size:11px;font-weight:700;text-align:center;margin-bottom:10px;}
+  /* Phone 1 - 실시간시세 */
+  .price-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #222;}
+  .price-name{color:#aaa;font-size:9px;}
+  .price-val{color:#fff;font-size:9px;font-weight:700;}
+  .price-up{color:#ff4444;font-size:8px;}
+  .price-down{color:#4CAF50;font-size:8px;}
+  .mini-chart{margin-top:8px;height:28px;position:relative;}
+  .mini-chart svg{width:100%;height:100%;}
+  /* Phone 2 - AI추천 */
+  .signal-card{border-radius:8px;padding:7px 8px;margin-bottom:6px;}
+  .signal-buy{background:#1a3a1a;border:1px solid #2a5a2a;}
+  .signal-sell{background:#3a1a1a;border:1px solid #5a2a2a;}
+  .signal-neutral{background:#222;border:1px solid #333;}
+  .signal-label{font-size:8px;font-weight:700;margin-bottom:2px;}
+  .signal-buy .signal-label{color:#4CAF50;}
+  .signal-sell .signal-label{color:#ff4444;}
+  .signal-neutral .signal-label{color:#888;}
+  .signal-title{color:#fff;font-size:9px;font-weight:700;margin-bottom:2px;}
+  .signal-desc{color:#888;font-size:7.5px;}
+  /* Phone 3 - 가격분석 */
+  .chart-subtitle{color:#aaa;font-size:8px;text-align:center;margin-bottom:8px;}
+  .bar-chart{display:flex;align-items:flex-end;gap:3px;height:36px;justify-content:center;}
+  .bar{background:#2d7a3a;border-radius:2px 2px 0 0;width:12px;}
+  .chart-labels{display:flex;justify-content:space-between;margin-top:4px;}
+  .chart-label{color:#666;font-size:7px;}
+  .time-btns{display:flex;gap:4px;justify-content:center;margin-top:8px;}
+  .time-btn{background:#222;color:#888;font-size:7px;padding:3px 6px;border-radius:4px;}
+  .time-btn-active{background:#2d7a3a;color:#fff;}
+  .price-stats{margin-top:8px;}
+  .price-stat-row{display:flex;justify-content:space-between;padding:2px 0;}
+  .stat-label-txt{color:#888;font-size:8px;}
+  .stat-val-up{color:#ff4444;font-size:8px;font-weight:700;}
+  .stat-val-down{color:#4CAF50;font-size:8px;font-weight:700;}
 
   /* FEATURES */
   .section{padding:64px 24px;max-width:1000px;margin:0 auto;}
@@ -116,20 +151,73 @@ app.get('/', (_req, res) => {
   </div>
 
   <div class="mockups">
+    <!-- Phone 1: 실시간 시세 -->
     <div class="phone">
-      <div class="phone-icon">📊</div>
-      <div class="phone-title">실시간 경락가</div>
-      <div class="phone-label">KAMIS 연동<br>실시간 시세</div>
+      <div class="phone-bar"><span class="phone-time">9:41</span><span class="phone-dots">•••</span></div>
+      <div class="phone-body">
+        <div class="phone-title">실시간 시세</div>
+        <div class="price-row"><span class="price-name">사과 (후지)</span><span class="price-val">42,000원</span><span class="price-up">+2.3%</span></div>
+        <div class="price-row"><span class="price-name">배추</span><span class="price-val">8,500원</span><span class="price-down">-1.1%</span></div>
+        <div class="price-row"><span class="price-name">돼지고기</span><span class="price-val">15,200원</span><span class="price-up">+0.8%</span></div>
+        <div class="price-row"><span class="price-name">쌀 (20kg)</span><span class="price-val">58,000원</span><span class="price-up">+0.2%</span></div>
+        <div class="price-row"><span class="price-name">고추</span><span class="price-val">12,400원</span><span class="price-down">-3.2%</span></div>
+        <div class="mini-chart">
+          <svg viewBox="0 0 130 28" preserveAspectRatio="none">
+            <polyline points="0,22 20,18 40,20 60,15 80,12 100,8 130,5" fill="none" stroke="#4CAF50" stroke-width="1.5"/>
+            <polygon points="0,22 20,18 40,20 60,15 80,12 100,8 130,5 130,28 0,28" fill="rgba(76,175,80,0.15)"/>
+          </svg>
+        </div>
+      </div>
     </div>
-    <div class="phone">
-      <div class="phone-icon">🤖</div>
-      <div class="phone-title">AI 출하 추천</div>
-      <div class="phone-label">최적 출하 시점<br>자동 분석</div>
+    <!-- Phone 2: AI 출하 추천 -->
+    <div class="phone" style="transform:scale(1.06);transform-origin:bottom center;">
+      <div class="phone-bar"><span class="phone-time">9:41</span><span class="phone-dots">•••</span></div>
+      <div class="phone-body">
+        <div class="phone-title">AI 출하 추천</div>
+        <div class="signal-card signal-buy">
+          <div class="signal-label">매수 신호</div>
+          <div class="signal-title">사과 이번주 출하 적기</div>
+          <div class="signal-desc">평균 대비 +15% 예측</div>
+        </div>
+        <div class="signal-card signal-sell">
+          <div class="signal-label">매도 신호</div>
+          <div class="signal-title">배추 가격 하락 예상</div>
+          <div class="signal-desc">2주 내 -8% 예측</div>
+        </div>
+        <div class="signal-card signal-neutral">
+          <div class="signal-label">시장 동향</div>
+          <div class="signal-title">시장 동향</div>
+          <div class="signal-desc">이번 주 채소류 전반적 강세, 과일류는 보합세 유지 전망</div>
+        </div>
+      </div>
     </div>
+    <!-- Phone 3: 가격 분석 -->
     <div class="phone">
-      <div class="phone-icon">📈</div>
-      <div class="phone-title">가격 히스토리</div>
-      <div class="phone-label">연간 트렌드<br>차트 분석</div>
+      <div class="phone-bar"><span class="phone-time">9:41</span><span class="phone-dots">•••</span></div>
+      <div class="phone-body">
+        <div class="phone-title">가격 분석</div>
+        <div class="chart-subtitle">사과 (후지) 30일 추이</div>
+        <div class="bar-chart">
+          <div class="bar" style="height:18px;opacity:.5"></div>
+          <div class="bar" style="height:22px;opacity:.6"></div>
+          <div class="bar" style="height:16px;opacity:.5"></div>
+          <div class="bar" style="height:28px;opacity:.7"></div>
+          <div class="bar" style="height:24px;opacity:.7"></div>
+          <div class="bar" style="height:32px;opacity:.85"></div>
+          <div class="bar" style="height:30px;opacity:.85"></div>
+          <div class="bar" style="height:36px"></div>
+        </div>
+        <div class="chart-labels"><span class="chart-label">4주전</span><span class="chart-label">현재</span></div>
+        <div class="time-btns">
+          <div class="time-btn time-btn-active">1주</div>
+          <div class="time-btn">1개월</div>
+          <div class="time-btn">3개월</div>
+        </div>
+        <div class="price-stats">
+          <div class="price-stat-row"><span class="stat-label-txt">최고가</span><span class="stat-val-up">45,000원</span></div>
+          <div class="price-stat-row"><span class="stat-label-txt">최저가</span><span class="stat-val-down">38,000원</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
