@@ -105,4 +105,12 @@ async function bootstrap() {
       }
 
       app.listen(PORT, () => {
-              logger.info(`Server running on port ${PORT} — /${API_VE
+              logger.info(`Server running on port ${PORT} — /${API_VERSION}`);
+      });
+    } catch (err) {
+      logger.error('Bootstrap failed:', err);
+      process.exit(1);
+    }
+}
+
+bootstrap();
