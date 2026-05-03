@@ -200,7 +200,7 @@ app.get('/', (_req, res) => {
   <div>
     <strong>시세왕 (SisaeWang)</strong> — 농수축산물 실시간 시세 정보 서비스<br>
     문의: <a href="mailto:heyboongss@naver.com">heyboongss@naver.com</a><br>
-    <small style="opacity:.6">© 2024 PsyNet. All rights reserved. API v${process.env.API_VERSION ?? 'v1'}</small>
+    <small style="opacity:.6">© 2025 HappyFood. All rights reserved.</small>
   </div>
 </footer>
 
