@@ -111,7 +111,7 @@ app.get('/', (_req, res) => {
   <h1>시세왕 <span>王</span></h1>
   <p>실시간 경락가격 · AI 출하 추천 · 가격 히스토리<br>농가와 바이어를 위한 가장 빠른 시세 정보</p>
   <div>
-    <a href="/v1/health" class="btn">🟢 API 상태 확인</a>
+    <a href="/health" class="btn">🟢 API 상태 확인</a>
     <a href="mailto:boongss@psynet.co.kr" class="btn btn-outline">문의하기</a>
   </div>
 
