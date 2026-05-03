@@ -1,0 +1,296 @@
+// ================================================
+// 시세왕 Prisma 스키마 — PostgreSQL 15+
+// ================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== 도매시장 =====
+model Market {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(10)   // 예: '110001'
+  name       String   @db.VarChar(50)            // 예: '서울가락도매시장'
+  region     String?  @db.VarChar(20)            // 예: '서울'
+  address    String?  @db.VarChar(100)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  auctionPrices AuctionPrice[]
+  userItems     UserItem[]
+  alerts        Alert[]
+
+  @@map("markets")
+}
+
+// ===== 품목 =====
+model Item {
+  id            Int       @id @default(autoincrement())
+  categoryCode  String    @db.VarChar(10)               // 예: '100' (채소류)
+  categoryName  String    @db.VarChar(20)               // 예: '채소류'
+  itemCode      String    @unique @db.VarChar(10)        // 예: '111'
+  itemName      String    @db.VarChar(30)               // 예: '배추'
+  kindCode      String?   @db.VarChar(10)               // 품종 코드
+  kindName      String?   @db.VarChar(30)               // 품종명
+  unitQty       Decimal?  @db.Decimal(10, 2)            // 단위 수량
+  unitName      String?   @db.VarChar(10)               // 단위명 (kg, 개, 마리)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  auctionPrices    AuctionPrice[]
+  surveyPrices     SurveyPrice[]
+  userItems        UserItem[]
+  alerts           Alert[]
+  aiRecommendations AiRecommendation[]
+
+  @@index([categoryCode], name: "idx_items_category")
+  @@index([itemCode], name: "idx_items_code")
+  @@map("items")
+}
+
+// ===== 경락가격 이력 =====
+model AuctionPrice {
+  id         BigInt   @id @default(autoincrement())
+  marketId   Int
+  itemId     Int
+  gradeCode  String?  @db.VarChar(5)              // 특/상/중/하/1PP/1P/1/2/3
+  saleDate   DateTime @db.Date
+  avgPrice   Decimal? @db.Decimal(12, 2)           // 평균 경락가 (원)
+  maxPrice   Decimal? @db.Decimal(12, 2)           // 최고 경락가 (원)
+  minPrice   Decimal? @db.Decimal(12, 2)           // 최저 경락가 (원)
+  totalQty   Decimal? @db.Decimal(12, 2)           // 총 거래량 (kg 또는 두수)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  market Market @relation(fields: [marketId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@unique([marketId, itemId, gradeCode, saleDate], name: "uq_auction_market_item_grade_date")
+  @@index([itemId, saleDate(sort: Desc)], name: "idx_auction_item_date")
+  @@index([marketId, saleDate(sort: Desc)], name: "idx_auction_market_date")
+  @@index([saleDate(sort: Desc)], name: "idx_auction_date")
+  @@map("auction_prices")
+}
+
+// ===== 조사가격 이력 (산지·도매·소매) =====
+model SurveyPrice {
+  id          BigInt   @id @default(autoincrement())
+  itemId      Int
+  priceType   String   @db.VarChar(10)             // 'ORIGIN' / 'WHOLESALE' / 'RETAIL'
+  regionCode  String?  @db.VarChar(10)             // 지역 코드 (전국: '1101')
+  surveyDate  DateTime @db.Date
+  price       Decimal? @db.Decimal(12, 2)           // 가격 (원)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@unique([itemId, priceType, regionCode, surveyDate], name: "uq_survey_item_type_region_date")
+  @@index([itemId, priceType, surveyDate(sort: Desc)], name: "idx_survey_item_type_date")
+  @@map("survey_prices")
+}
+
+// ===== 사용자 =====
+model User {
+  id             BigInt    @id @default(autoincrement())
+  uid            String    @unique @db.VarChar(128)    // Firebase UID
+  email          String?   @db.VarChar(255)
+  nickname       String?   @db.VarChar(50)
+  userType       String    @default("CONSUMER") @db.VarChar(20)  // CONSUMER/FARMER/BUYER
+  fcmToken       String?   @db.Text
+  isPremium      Boolean   @default(false)
+  subscriptionId Int?
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+
+  userItems        UserItem[]
+  alerts           Alert[]
+  alertLogs        AlertLog[]
+  subscriptions    Subscription[]
+  communityPosts   CommunityPost[]
+  communityComments CommunityComment[]
+  communityReports CommunityReport[]
+  communityLikes   CommunityLike[]
+
+  @@map("users")
+}
+
+// ===== 관심 품목 =====
+model UserItem {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt
+  itemId     Int
+  marketId   Int?                                       // NULL이면 전국 평균
+  gradeCode  String?  @db.VarChar(5)                   // NULL이면 상품 기준
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item   Item    @relation(fields: [itemId], references: [id])
+  market Market? @relation(fields: [marketId], references: [id])
+
+  @@unique([userId, itemId, marketId], name: "uq_user_item_market")
+  @@map("user_items")
+}
+
+// ===== 알림 설정 =====
+model Alert {
+  id             BigInt    @id @default(autoincrement())
+  userId         BigInt
+  itemId         Int
+  marketId       Int?
+  alertType      String    @db.VarChar(20)
+  // PRICE_ABOVE / PRICE_BELOW / CHANGE_RATE / VS_AVERAGE
+  thresholdValue Decimal   @db.Decimal(12, 2)
+  isActive       Boolean   @default(true)
+  lastFiredAt    DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item     Item       @relation(fields: [itemId], references: [id])
+  market   Market?    @relation(fields: [marketId], references: [id])
+  alertLogs AlertLog[]
+
+  @@map("alerts")
+}
+
+// ===== 알림 발송 이력 =====
+model AlertLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt
+  alertId    BigInt
+  message    String   @db.Text
+  firedAt    DateTime @default(now()) @db.Timestamptz(6)
+  isRead     Boolean  @default(false)
+
+  user  User  @relation(fields: [userId], references: [id])
+  alert Alert @relation(fields: [alertId], references: [id])
+
+  @@map("alert_logs")
+}
+
+// ===== 구독 정보 =====
+model Subscription {
+  id             BigInt    @id @default(autoincrement())
+  userId         BigInt
+  plan           String    @db.VarChar(20)              // FREE/PREMIUM/BUSINESS/ENTERPRISE
+  platform       String?   @db.VarChar(10)              // ios/android/web
+  purchaseToken  String?   @db.Text                     // 인앱 결제 토큰
+  productId      String?   @db.VarChar(100)             // 스토어 상품 ID
+  startedAt      DateTime? @db.Timestamptz(6)
+  expiresAt      DateTime? @db.Timestamptz(6)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// ===== 커뮤니티 게시글 =====
+model CommunityPost {
+  id          BigInt    @id @default(autoincrement())
+  authorId    BigInt?                                   // NULL이면 익명
+  title       String    @db.VarChar(100)
+  content     String    @db.Text
+  itemCode    String?   @db.VarChar(10)                // 연관 품목 (선택)
+  isAnonymous Boolean   @default(false)
+  isBlinded   Boolean   @default(false)                // 신고 누적 시 블라인드
+  likeCount   Int       @default(0)
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+
+  author   User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  comments CommunityComment[]
+  images   CommunityImage[]
+  reports  CommunityReport[]
+  likes    CommunityLike[]
+
+  @@index([createdAt(sort: Desc)], name: "idx_post_created")
+  @@index([itemCode],              name: "idx_post_item")
+  @@map("community_posts")
+}
+
+// ===== 커뮤니티 댓글 =====
+model CommunityComment {
+  id          BigInt    @id @default(autoincrement())
+  postId      BigInt
+  authorId    BigInt?
+  content     String    @db.Text
+  isAnonymous Boolean   @default(false)
+  isBlinded   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+
+  post    CommunityPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User?           @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reports CommunityReport[]
+
+  @@index([postId], name: "idx_comment_post")
+  @@map("community_comments")
+}
+
+// ===== 커뮤니티 이미지 =====
+model CommunityImage {
+  id        BigInt   @id @default(autoincrement())
+  postId    BigInt
+  url       String   @db.VarChar(500)               // S3 URL
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("community_images")
+}
+
+// ===== 커뮤니티 신고 =====
+model CommunityReport {
+  id         BigInt   @id @default(autoincrement())
+  reporterId BigInt
+  postId     BigInt?
+  commentId  BigInt?
+  reason     String   @db.VarChar(100)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  reporter User              @relation(fields: [reporterId], references: [id])
+  post     CommunityPost?    @relation(fields: [postId],    references: [id], onDelete: Cascade)
+  comment  CommunityComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@map("community_reports")
+}
+
+// ===== 커뮤니티 좋아요 =====
+model CommunityLike {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  postId    BigInt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId], name: "uq_like_user_post")
+  @@map("community_likes")
+}
+
+// ===== AI 출하 추천 =====
+model AiRecommendation {
+  id             BigInt    @id @default(autoincrement())
+  itemId         Int
+  targetDate     DateTime  @db.Date
+  recommendation String    @db.VarChar(20)
+  // SELL_NOW / SELL_SOON / HOLD
+  score          Decimal?  @db.Decimal(5, 2)            // 신뢰도 점수 (0~100)
+  expectedPrice  Decimal?  @db.Decimal(12, 2)           // 예상 경락가
+  reasoning      String?   @db.Text                     // 추천 근거 (JSON)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@unique([itemId, targetDate], name: "uq_ai_recommendation_item_date")
+  @@map("ai_recommendations")
+}
