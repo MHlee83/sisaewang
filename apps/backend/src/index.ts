@@ -321,20 +321,34 @@ router.use('/recommendations', recommendationRoutes);
 router.use('/subscriptions',   subscriptionRoutes);
 router.use('/community',       communityRoutes);
 
-// ===== 관리자 수동 트리거 (ADMIN_SECRET 필요) =====
-router.post('/admin/collect/survey', async (req, res) => {
+// ===== 관리자 라우트 (ADMIN_SECRET 필요) =====
+const adminGuard = (req: express.Request, res: express.Response): boolean => {
     const secret = req.headers['x-admin-secret'];
     if (!secret || secret !== process.env.ADMIN_SECRET) {
         res.status(401).json({ error: 'UNAUTHORIZED' });
-        return;
+        return false;
     }
-    try {
-        logger.info('[Admin] 수동 KAMIS 조사가격 수집 시작');
-        collectSurveyPrices().catch((e) => logger.error('수동 수집 오류:', e));
-        res.json({ ok: true, message: '조사가격 수집 시작됨 (백그라운드)' });
-    } catch (e) {
-        res.status(500).json({ error: (e as Error).message });
-    }
+    return true;
+};
+
+// DB 상태 확인
+router.get('/admin/status', async (req, res) => {
+    if (!adminGuard(req, res)) return;
+    const [itemCount, marketCount, surveyCount, auctionCount] = await Promise.all([
+        prisma.item.count(),
+        prisma.market.count(),
+        prisma.surveyPrice.count(),
+        prisma.auctionPrice.count(),
+    ]);
+    res.json({ itemCount, marketCount, surveyCount, auctionCount, kamis: !!process.env.KAMIS_API_KEY });
+});
+
+// KAMIS 조사가격 수동 수집
+router.post('/admin/collect/survey', async (req, res) => {
+    if (!adminGuard(req, res)) return;
+    logger.info('[Admin] 수동 KAMIS 조사가격 수집 시작');
+    collectSurveyPrices().catch((e) => logger.error('수동 수집 오류:', e));
+    res.json({ ok: true, message: '조사가격 수집 시작됨 (백그라운드)' });
 });
 
 app.use(`/${API_VERSION}`, router);
