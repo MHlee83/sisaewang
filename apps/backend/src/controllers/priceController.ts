@@ -161,6 +161,70 @@ export async function getSurveyPrices(req: Request, res: Response): Promise<void
   res.json(result);
 }
 
+// ===== 조사가격 전체 목록 (최신 날짜 기준) =====
+export async function getSurveyPriceList(req: Request, res: Response): Promise<void> {
+  const cacheKey = 'prices:survey:list:latest';
+  const cached = await getCache<unknown>(cacheKey);
+  if (cached) { res.json(cached); return; }
+
+  // 가장 최근 수집된 날짜 찾기
+  const latest = await prisma.surveyPrice.findFirst({
+    orderBy: { surveyDate: 'desc' },
+    select:  { surveyDate: true },
+  });
+
+  if (!latest) { res.json({ items: [], surveyDate: null }); return; }
+
+  const prices = await prisma.surveyPrice.findMany({
+    where: { surveyDate: latest.surveyDate },
+    include: {
+      item: {
+        select: {
+          itemCode: true, itemName: true,
+          categoryCode: true, categoryName: true,
+        },
+      },
+    },
+  });
+
+  // 품목별로 소매/도매/산지 묶기
+  const map = new Map<string, {
+    itemCode: string; itemName: string;
+    categoryCode: string; categoryName: string;
+    retail: number | null; wholesale: number | null; origin: number | null;
+  }>();
+
+  for (const p of prices) {
+    const key = p.item.itemCode;
+    if (!map.has(key)) {
+      map.set(key, {
+        itemCode:     p.item.itemCode,
+        itemName:     p.item.itemName,
+        categoryCode: p.item.categoryCode,
+        categoryName: p.item.categoryName,
+        retail: null, wholesale: null, origin: null,
+      });
+    }
+    const entry = map.get(key)!;
+    if (p.priceType === 'RETAIL')    entry.retail    = Number(p.price);
+    if (p.priceType === 'WHOLESALE') entry.wholesale = Number(p.price);
+    if (p.priceType === 'ORIGIN')    entry.origin    = Number(p.price);
+  }
+
+  const items = Array.from(map.values()).map((e) => ({
+    ...e,
+    avgPrice: e.retail ?? e.wholesale ?? e.origin ?? 0,
+  }));
+
+  const result = {
+    items,
+    surveyDate: dayjs(latest.surveyDate).format('YYYY-MM-DD'),
+  };
+
+  await setCache(cacheKey, result, CacheTTL.SURVEY_PRICE);
+  res.json(result);
+}
+
 // ===== 시장별 가격 비교 =====
 export async function compareMarketPrices(req: Request, res: Response): Promise<void> {
   const { itemCode, gradeCode, date } = req.query as Record<string, string>;
