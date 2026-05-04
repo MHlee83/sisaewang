@@ -351,6 +351,33 @@ router.post('/admin/collect/survey', async (req, res) => {
     res.json({ ok: true, message: '조사가격 수집 시작됨 (백그라운드)' });
 });
 
+// KAMIS API 원본 응답 확인 (디버그)
+router.get('/admin/kamis-test', async (req, res) => {
+    if (!adminGuard(req, res)) return;
+    const axios = (await import('axios')).default;
+    const dayjs = (await import('dayjs')).default;
+    const today = dayjs();
+    try {
+        const response = await axios.get('https://www.kamis.or.kr/service/price/xml.do', {
+            params: {
+                action: 'dailySalesList',
+                p_yyyy: today.format('YYYY'),
+                p_mm:   today.format('MM'),
+                p_dd:   today.format('DD'),
+                p_itemcategorycode: '400',
+                p_itemcode: '411',
+                p_cert_key: process.env.KAMIS_API_KEY,
+                p_cert_id:  process.env.KAMIS_CERT_ID,
+                p_returntype: 'json',
+            },
+            timeout: 15000,
+        });
+        res.json({ params: { date: today.format('YYYY-MM-DD'), certId: process.env.KAMIS_CERT_ID }, raw: response.data });
+    } catch (e) {
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
+
 app.use(`/${API_VERSION}`, router);
 
 // ===== 에러 핸들러 =====
