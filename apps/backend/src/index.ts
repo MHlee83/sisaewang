@@ -10,6 +10,7 @@ import { redis, isRedisEnabled } from './utils/redis';
 import { logger } from './utils/logger';
 import { initFirebase } from './utils/firebase';
 import { startCronJobs } from './jobs';
+import { collectSurveyPrices } from './jobs/collectSurvey';
 
 import priceRoutes from './routes/prices';
 import itemRoutes from './routes/items';
@@ -319,6 +320,22 @@ router.use('/users/me/alerts', alertRoutes);
 router.use('/recommendations', recommendationRoutes);
 router.use('/subscriptions',   subscriptionRoutes);
 router.use('/community',       communityRoutes);
+
+// ===== 관리자 수동 트리거 (ADMIN_SECRET 필요) =====
+router.post('/admin/collect/survey', async (req, res) => {
+    const secret = req.headers['x-admin-secret'];
+    if (!secret || secret !== process.env.ADMIN_SECRET) {
+        res.status(401).json({ error: 'UNAUTHORIZED' });
+        return;
+    }
+    try {
+        logger.info('[Admin] 수동 KAMIS 조사가격 수집 시작');
+        collectSurveyPrices().catch((e) => logger.error('수동 수집 오류:', e));
+        res.json({ ok: true, message: '조사가격 수집 시작됨 (백그라운드)' });
+    } catch (e) {
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
 
 app.use(`/${API_VERSION}`, router);
 
