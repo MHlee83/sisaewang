@@ -37,6 +37,7 @@ export async function collectSurveyPrices(targetDate?: string): Promise<void> {
           p_itemcategorycode:  item.categoryCode,
           p_itemcode:          item.itemCode,
           p_cert_key:          process.env.KAMIS_API_KEY,
+          p_cert_id:           process.env.KAMIS_CERT_ID,
           p_returntype:        'json',
         },
         timeout: 15000,
