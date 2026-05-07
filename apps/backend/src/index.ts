@@ -11,6 +11,7 @@ import { logger } from './utils/logger';
 import { initFirebase } from './utils/firebase';
 import { startCronJobs } from './jobs';
 import { collectSurveyPrices } from './jobs/collectSurvey';
+import { collectAuctionPrices } from './jobs/collectAuction';
 
 import priceRoutes from './routes/prices';
 import itemRoutes from './routes/items';
@@ -349,6 +350,15 @@ router.post('/admin/collect/survey', async (req, res) => {
     logger.info('[Admin] 수동 KAMIS 조사가격 수집 시작');
     collectSurveyPrices().catch((e) => logger.error('수동 수집 오류:', e));
     res.json({ ok: true, message: '조사가격 수집 시작됨 (백그라운드)' });
+});
+
+// 공영도매시장 경매 수동 수집
+router.post('/admin/collect/auction', async (req, res) => {
+    if (!adminGuard(req, res)) return;
+    const { date } = req.query as { date?: string };
+    logger.info(`[Admin] 수동 경매가격 수집 시작${date ? ` (날짜: ${date})` : ''}`);
+    collectAuctionPrices(date).catch((e) => logger.error('수동 경매 수집 오류:', e));
+    res.json({ ok: true, message: `경매가격 수집 시작됨 (백그라운드)${date ? `, 날짜: ${date}` : ''}` });
 });
 
 // KAMIS API 원본 응답 확인 (디버그)
