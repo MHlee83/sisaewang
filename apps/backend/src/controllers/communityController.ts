@@ -90,7 +90,7 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
     const guest = await prisma.user.upsert({
       where:  { uid: 'guest' },
       update: {},
-      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER', plan: 'FREE' },
+      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER' },
     });
     authorId = guest.id;
   }
@@ -175,7 +175,7 @@ export async function createComment(req: AuthRequest, res: Response): Promise<vo
     const guest = await prisma.user.upsert({
       where:  { uid: 'guest' },
       update: {},
-      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER', plan: 'FREE' },
+      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER' },
     });
     commentAuthorId = guest.id;
   }
