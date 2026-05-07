@@ -71,8 +71,8 @@ export async function getPost(req: AuthRequest, res: Response): Promise<void> {
 
 // ===== 게시글 작성 =====
 const CreatePostSchema = z.object({
-  title:       z.string().min(2).max(100),
-  content:     z.string().min(5).max(5000),
+  title:       z.string().min(1).max(100),
+  content:     z.string().min(1).max(5000),
   itemCode:    z.string().optional(),
   isAnonymous: z.boolean().default(false),
   imageUrls:   z.array(z.string().url()).max(5).default([]),
