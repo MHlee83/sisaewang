@@ -84,9 +84,20 @@ export async function createPost(req: AuthRequest, res: Response): Promise<void>
 
   const { title, content, itemCode, isAnonymous, imageUrls } = parsed.data;
 
+  // 비로그인(테스트) 시 게스트 유저 자동 생성
+  let authorId = req.user?.id;
+  if (!authorId) {
+    const guest = await prisma.user.upsert({
+      where:  { uid: 'guest' },
+      update: {},
+      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER', plan: 'FREE' },
+    });
+    authorId = guest.id;
+  }
+
   const post = await prisma.communityPost.create({
     data: {
-      authorId: req.user!.id,
+      authorId,
       title,
       content,
       itemCode: itemCode ?? null,
@@ -159,10 +170,20 @@ export async function createComment(req: AuthRequest, res: Response): Promise<vo
   if (!content?.trim()) { res.status(400).json({ error: 'INVALID_INPUT', message: '댓글 내용을 입력해주세요.' }); return; }
   if (content.length > 1000) { res.status(400).json({ error: 'INVALID_INPUT', message: '댓글은 1000자 이하로 입력해주세요.' }); return; }
 
+  let commentAuthorId = req.user?.id;
+  if (!commentAuthorId) {
+    const guest = await prisma.user.upsert({
+      where:  { uid: 'guest' },
+      update: {},
+      create: { uid: 'guest', nickname: '테스트유저', userType: 'CONSUMER', plan: 'FREE' },
+    });
+    commentAuthorId = guest.id;
+  }
+
   const comment = await prisma.communityComment.create({
     data: {
       postId,
-      authorId:    req.user!.id,
+      authorId:    commentAuthorId,
       content:     content.trim(),
       isAnonymous: !!isAnonymous,
     },
