@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 b8753c711eb8299a7f08e3145dfb43b2da6b6ce9 psynet1004 <your@email.com> 1777646939 +0900	commit (initial): Initial commit
+b8753c711eb8299a7f08e3145dfb43b2da6b6ce9 ca2e32a672294c16fc7fb33fc937d65e53e50fe4 psynet1004 <your@email.com> 1777647413 +0900	commit: fix: EAS Build APK 설정
+ca2e32a672294c16fc7fb33fc937d65e53e50fe4 c8d5faaede6373b0756205fd33f019f42e37277d psynet1004 <your@email.com> 1777647791 +0900	commit: fix: TypeScript 에러 2개 수정
+c8d5faaede6373b0756205fd33f019f42e37277d 8ff94c544e4714321a913697398a605c68d1390c psynet1004 <your@email.com> 1777648028 +0900	commit: fix: EAS Build - shared 패키지 추가, 백엔드 아카이브 제외, metro 조건부 모노레포 설정
+8ff94c544e4714321a913697398a605c68d1390c 2aa8db4cd8c4a5ce6b2c778c56ede2187b00218d psynet1004 <your@email.com> 1777648672 +0900	commit: fix: .easignore 제거, workspaces 제거
+2aa8db4cd8c4a5ce6b2c778c56ede2187b00218d bec6eccfb467b327b3a225fb4b5c21c1d224ece6 psynet1004 <your@email.com> 1777649045 +0900	commit: chore: mobile 앱을 독립 git 저장소로 분리

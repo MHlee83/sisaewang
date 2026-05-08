@@ -6,3 +6,9 @@ web-build/
 *.log
 ios/
 android/
+
+.env
+
+# Sensitive credentials (never commit)
+docs/supabase-prod-credentials.md
+google-play-service-account.json

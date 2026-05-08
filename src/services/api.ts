@@ -32,13 +32,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 토큰 만료 → 로그아웃 처리 (store에서 처리)
-      console.warn('[API] 인증 만료');
+      // 토큰 만료 — 비로그인 테스트 중에는 무시
     }
     if (error.response?.status === 403) {
       const errorData = error.response.data;
       if (errorData?.error === 'PLAN_REQUIRED') {
-        console.warn(`[API] 플랜 업그레이드 필요: ${errorData.requiredPlan}`);
+        // 플랜 업그레이드 필요 — 무시
       }
     }
     return Promise.reject(error);

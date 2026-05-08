@@ -27,7 +27,7 @@ export default function MyPageScreen() {
   const { user, logout } = useAuthStore();
   const { favoriteItemCodes } = useFilterStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { records, thisMonthSavings, totalSavings } = useSavingsStore();
+  const { records, thisMonthSavings, totalSavings, removeRecord } = useSavingsStore();
   const { alerts: localAlerts } = useAlertStore();
   const { notifications, unreadCount, markAllRead } = useNotificationStore();
 
@@ -244,6 +244,13 @@ export default function MyPageScreen() {
                 <Text style={styles.savingsRecordAmount}>
                   {r.savedAmount > 0 ? '−' : '+'}{Math.abs(r.savedAmount).toLocaleString()}원
                 </Text>
+                <TouchableOpacity
+                  onPress={() => removeRecord(r.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{ marginLeft: 10 }}
+                >
+                  <Text style={{ fontSize: 16, color: '#999' }}>×</Text>
+                </TouchableOpacity>
               </View>
             ))
           )}

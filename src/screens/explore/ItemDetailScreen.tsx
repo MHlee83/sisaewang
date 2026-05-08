@@ -6,6 +6,7 @@ import {
 
 const SCREEN_W = Dimensions.get('window').width;
 import { MOCK_PRICES, MOCK_POSTS } from '@/services/mockData';
+import { getPosts } from '@/services/communityService';
 import {
   getRetailPrice, getPriceLabel,
   getRecommendationText, getRecommendationColor,
@@ -319,11 +320,12 @@ export default function ItemDetailScreen() {
     [itemCode, retailBase],
   );
 
-  // 이 품목 관련 커뮤니티 글 (최대 3개)
-  const relatedPosts = useMemo(
-    () => MOCK_POSTS.filter((p) => p.itemCode === itemCode).slice(0, 3),
-    [itemCode],
-  );
+  // 이 품목 관련 커뮤니티 글 (최대 3개) — 실제 API
+  const { data: relatedPostsData } = useQuery({
+    queryKey: ['communityPosts', itemCode],
+    queryFn:  () => getPosts({ itemCode, limit: 3 }),
+  });
+  const relatedPosts = relatedPostsData?.posts ?? MOCK_POSTS.filter((p) => p.itemCode === itemCode).slice(0, 3);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -368,6 +370,49 @@ export default function ItemDetailScreen() {
           {marginRate != null && (
             <View style={styles.marginBadge}>
               <Text style={styles.marginText}>유통마진율 {marginRate.toFixed(1)}%</Text>
+            </View>
+          )}
+        </View>
+
+        {/* 관련 커뮤니티 */}
+        <View style={[styles.section, { marginBottom: 6 }]}>
+          <View style={styles.communityHeader}>
+            <Text style={styles.sectionTitle}>💬 {itemName} 커뮤니티</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Community' as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.communityMore}>전체보기</Text>
+            </TouchableOpacity>
+          </View>
+
+          {relatedPosts.length > 0 ? (
+            relatedPosts.map((post) => (
+              <TouchableOpacity
+                key={post.id}
+                style={styles.communityPost}
+                activeOpacity={0.75}
+                onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
+              >
+                <Text style={styles.communityPostTitle} numberOfLines={1}>{post.title}</Text>
+                <View style={styles.communityPostMeta}>
+                  <Text style={styles.communityPostMetaText}>{post.authorName}</Text>
+                  <Text style={styles.communityPostMetaDot}>·</Text>
+                  <Text style={styles.communityPostMetaText}>❤️ {post.likeCount}</Text>
+                  <Text style={styles.communityPostMetaDot}>·</Text>
+                  <Text style={styles.communityPostMetaText}>💬 {post.commentCount}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.communityEmpty}>
+              <Text style={styles.communityEmptyText}>아직 관련 글이 없어요</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('PostCreate' as any, { itemCode, itemName })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.communityWriteBtn}>첫 글 작성하기 →</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -532,49 +577,6 @@ export default function ItemDetailScreen() {
           </View>
           );
         })()}
-
-        {/* 관련 커뮤니티 */}
-        <View style={[styles.section, { marginBottom: 24 }]}>
-          <View style={styles.communityHeader}>
-            <Text style={styles.sectionTitle}>💬 {itemName} 커뮤니티</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Community' as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.communityMore}>전체보기</Text>
-            </TouchableOpacity>
-          </View>
-
-          {relatedPosts.length > 0 ? (
-            relatedPosts.map((post) => (
-              <TouchableOpacity
-                key={post.id}
-                style={styles.communityPost}
-                activeOpacity={0.75}
-                onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
-              >
-                <Text style={styles.communityPostTitle} numberOfLines={1}>{post.title}</Text>
-                <View style={styles.communityPostMeta}>
-                  <Text style={styles.communityPostMetaText}>{post.authorName}</Text>
-                  <Text style={styles.communityPostMetaDot}>·</Text>
-                  <Text style={styles.communityPostMetaText}>❤️ {post.likeCount}</Text>
-                  <Text style={styles.communityPostMetaDot}>·</Text>
-                  <Text style={styles.communityPostMetaText}>💬 {post.commentCount}</Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.communityEmpty}>
-              <Text style={styles.communityEmptyText}>아직 관련 글이 없어요</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('PostCreate' as any, {})}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.communityWriteBtn}>첫 글 작성하기 →</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
 
       </ScrollView>
 

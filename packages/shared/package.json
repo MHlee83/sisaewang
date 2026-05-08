@@ -1,0 +1,7 @@
+{
+  "name": "@sisaewang/shared",
+  "version": "0.0.1",
+  "private": true,
+  "description": "시세왕 공유 타입 및 유틸리티",
+  "main": "index.js"
+}

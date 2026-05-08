@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '@/constants';
 import {
@@ -16,6 +17,7 @@ import {
   MOCK_INSIGHTS,
   MOCK_SEASONAL_INSIGHTS,
 } from '@/services/mockData';
+import { fetchAuctionPrices, type AuctionItem } from '@/services/apiService';
 import { useFilterStore } from '@/store/filterStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -282,6 +284,16 @@ export default function AnalysisScreen() {
   const [selectedSub, setSelectedSub] = useState(0);
   const [selectedRange, setSelectedRange] = useState(0);
   const [sortMode, setSortMode] = useState<'fav' | 'rate_desc' | 'rate_asc'>('fav');
+  const [auctionData, setAuctionData] = useState<AuctionItem[]>([]);
+  const [auctionLoading, setAuctionLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedSub !== 3) return;
+    setAuctionLoading(true);
+    fetchAuctionPrices({ limit: 100 })
+      .then(setAuctionData)
+      .finally(() => setAuctionLoading(false));
+  }, [selectedSub]);
 
   const mockItem = MOCK_PRICES.find((p) => p.itemName === selectedItem);
   const history = MOCK_PRICE_HISTORY[selectedItem] ?? [];
@@ -340,7 +352,7 @@ export default function AnalysisScreen() {
 
       {/* 서브탭 */}
       <View style={styles.subTabs}>
-        {['가격 추이', '계절 분석', '시장 비교'].map((label, i) => (
+        {['가격 추이', '계절 분석', '시장 비교', '경매가'].map((label, i) => (
           <TouchableOpacity
             key={i}
             style={[styles.subTab, selectedSub === i && styles.subTabActive]}
@@ -514,6 +526,47 @@ export default function AnalysisScreen() {
           </>
         )}
 
+        {/* ── 경매가 ── */}
+        {selectedSub === 3 && (
+          <>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>오늘 공영도매시장 경락가</Text>
+            </View>
+            {auctionLoading ? (
+              <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
+            ) : auctionData.length === 0 ? (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 14 }}>오늘 경매 데이터가 없습니다</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.auctionHeader}>
+                  <Text style={[styles.auctionCell, { flex: 2 }]}>품목</Text>
+                  <Text style={[styles.auctionCell, { flex: 2 }]}>시장</Text>
+                  <Text style={[styles.auctionCell, { flex: 1, textAlign: 'right' }]}>낙찰가</Text>
+                  <Text style={[styles.auctionCell, { flex: 1, textAlign: 'right' }]}>수량</Text>
+                </View>
+                {auctionData.map((row) => (
+                  <View key={row.id} style={styles.auctionRow}>
+                    <Text style={[styles.auctionRowText, { flex: 2 }]} numberOfLines={1}>
+                      {row.itemName}
+                    </Text>
+                    <Text style={[styles.auctionRowText, { flex: 2, color: COLORS.textSecondary }]} numberOfLines={1}>
+                      {row.marketName}
+                    </Text>
+                    <Text style={[styles.auctionRowText, { flex: 1, textAlign: 'right', color: COLORS.surgeStrong, fontWeight: '700' }]}>
+                      {row.avgPrice.toLocaleString('ko-KR')}
+                    </Text>
+                    <Text style={[styles.auctionRowText, { flex: 1, textAlign: 'right', color: COLORS.textSecondary }]}>
+                      {row.totalQty.toLocaleString('ko-KR')}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
+        )}
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -637,4 +690,30 @@ const styles = StyleSheet.create({
   sortBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   sortBtnText: { fontSize: 10, fontWeight: '600', color: COLORS.textSecondary },
   sortBtnTextActive: { color: '#fff' },
+
+  auctionHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  auctionCell: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  auctionRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+    backgroundColor: COLORS.surface,
+  },
+  auctionRowText: {
+    fontSize: 12,
+    color: COLORS.textPrimary,
+  },
 });

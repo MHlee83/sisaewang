@@ -19,6 +19,24 @@ import type { CommunityPost } from '@/types';
 dayjs.extend(relativeTime);
 dayjs.locale('ko');
 
+const ITEM_NAMES: Record<string, string> = {
+  '10001': '배추',   '10002': '양배추', '10003': '시금치', '10004': '상추',
+  '10005': '깻잎',   '10006': '부추',   '10007': '쑥갓',   '10008': '열무',
+  '10009': '미나리', '10010': '아욱',   '10011': '양상추', '10012': '브로콜리',
+  '10021': '무',     '10022': '당근',   '10023': '감자',   '10024': '연근',
+  '10025': '우엉',   '10031': '대파',   '10032': '쪽파',   '10033': '양파',
+  '10034': '마늘',   '10035': '생강',   '10041': '풋고추', '10042': '홍고추',
+  '10043': '청양고추','10044': '파프리카','10051': '오이',  '10052': '호박',
+  '10053': '가지',   '10054': '토마토', '10055': '방울토마토',
+  '20011': '사과',   '20012': '배',     '20013': '복숭아', '20021': '포도',
+  '20031': '감귤',   '20041': '딸기',   '20051': '참외',   '20052': '수박',
+  '20061': '바나나', '20071': '키위',   '30011': '갈치',   '30021': '고등어',
+  '30031': '오징어', '40011': '돼지고기','40012': '소고기','40021': '닭고기',
+  '40031': '계란',   '50011': '쌀',     '50012': '현미',   '50031': '콩',
+  '111': '배추', '112': '무', '151': '양파', '152': '마늘',
+  '211': '사과', '222': '딸기', '511': '쌀', '441': '계란',
+};
+
 export default function CommunityScreen() {
   const navigation  = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user }    = useAuthStore();
@@ -52,7 +70,9 @@ export default function CommunityScreen() {
       <View style={styles.cardBody}>
         {item.itemCode && (
           <View style={styles.itemBadge}>
-            <Text style={styles.itemBadgeText}>#{item.itemCode}</Text>
+            <Text style={styles.itemBadgeText}>
+              🌿 {ITEM_NAMES[item.itemCode] ?? item.itemCode}
+            </Text>
           </View>
         )}
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>

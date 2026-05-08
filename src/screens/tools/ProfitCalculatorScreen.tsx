@@ -304,11 +304,11 @@ export default function ProfitCalculatorScreen() {
 
         {/* ── 결과 ── */}
         {result ? (
-          <View style={[s.resultCard, { borderColor: result.isProfit ? '#1B8A4E' : '#C62828' }]}>
+          <View style={[s.resultCard, { borderColor: result.isProfit ? '#0D6B3A' : '#B71C1C' }]}>
             <View style={s.resultHeader}>
               <Text style={s.resultTitle}>손익 분석 결과</Text>
               <View style={[s.resultBadge, { backgroundColor: result.isProfit ? '#E8F5E9' : '#FFEBEE' }]}>
-                <Text style={[s.resultBadgeText, { color: result.isProfit ? '#1B8A4E' : '#C62828' }]}>
+                <Text style={[s.resultBadgeText, { color: result.isProfit ? '#0D6B3A' : '#B71C1C' }]}>
                   {result.isProfit ? '✅ 수익' : '❌ 손실'}
                 </Text>
               </View>
@@ -318,19 +318,19 @@ export default function ProfitCalculatorScreen() {
             <View style={s.kpiRow}>
               <View style={s.kpiBox}>
                 <Text style={s.kpiLabel}>순이익</Text>
-                <Text style={[s.kpiValue, { color: result.isProfit ? '#1B8A4E' : '#C62828' }]}>
+                <Text style={[s.kpiValue, { color: result.isProfit ? '#0D6B3A' : '#B71C1C' }]} numberOfLines={1} adjustsFontSizeToFit>
                   {fmt(Math.round(result.netProfit))}
                 </Text>
               </View>
               <View style={s.kpiBox}>
-                <Text style={s.kpiLabel}>ROI</Text>
-                <Text style={[s.kpiValue, { color: result.isProfit ? '#1B8A4E' : '#C62828' }]}>
+                <Text style={s.kpiLabel}>투자수익률</Text>
+                <Text style={[s.kpiValue, { color: result.isProfit ? '#0D6B3A' : '#B71C1C' }]} numberOfLines={1} adjustsFontSizeToFit>
                   {fmtPct(result.roi)}
                 </Text>
               </View>
               <View style={s.kpiBox}>
                 <Text style={s.kpiLabel}>kg당 마진</Text>
-                <Text style={[s.kpiValue, { color: result.isProfit ? '#1B8A4E' : '#C62828' }]}>
+                <Text style={[s.kpiValue, { color: result.isProfit ? '#0D6B3A' : '#B71C1C' }]} numberOfLines={1} adjustsFontSizeToFit>
                   {fmt(Math.round(result.profitPerKg))}
                 </Text>
               </View>
@@ -363,7 +363,7 @@ export default function ProfitCalculatorScreen() {
               <Text style={s.breakEvenValue}>{fmt(Math.round(result.breakEvenPerKg))}/kg</Text>
               <Text style={s.breakEvenSub}>
                 현재 시세 {fmt(sellPrice)}/kg 대비{' '}
-                <Text style={{ color: result.isProfit ? '#1B8A4E' : '#C62828', fontWeight: '700' }}>
+                <Text style={{ color: result.isProfit ? '#0D6B3A' : '#B71C1C', fontWeight: '700' }}>
                   {fmtPct(((sellPrice - result.breakEvenPerKg) / result.breakEvenPerKg) * 100)}
                 </Text>
               </Text>
@@ -374,7 +374,7 @@ export default function ProfitCalculatorScreen() {
               <Text style={[s.adviceText, { color: result.isProfit ? '#1B8A4E' : '#E65100' }]}>
                 {result.isProfit
                   ? result.roi >= 10
-                    ? `💰 ROI ${result.roi.toFixed(1)}% — 우수한 수익률입니다. 적극 출하를 권장합니다.`
+                    ? `💰 투자수익률 ${result.roi.toFixed(1)}% — 우수한 수익률입니다. 적극 출하를 권장합니다.`
                     : `✅ 수익이 발생하나 마진이 낮습니다. 비용 절감을 검토하세요.`
                   : `⚠️ 현재 조건으로는 손실입니다. 판매가를 ${fmt(Math.round(result.breakEvenPerKg))}/kg 이상으로 유지하거나 비용을 줄이세요.`
                 }
@@ -445,8 +445,8 @@ const s = StyleSheet.create({
 
   kpiRow:  { flexDirection: 'row', gap: 8, marginBottom: 16 },
   kpiBox:  { flex: 1, alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 10, padding: 12 },
-  kpiLabel:{ fontSize: 11, color: COLORS.textDisabled, marginBottom: 5 },
-  kpiValue:{ fontSize: 16, fontWeight: '800' },
+  kpiLabel:{ fontSize: 12, fontWeight: '700', color: '#555', marginBottom: 5 },
+  kpiValue:{ fontSize: 16, fontWeight: '900' },
 
   detailTable: { borderTopWidth: 1, borderTopColor: COLORS.divider, paddingTop: 12, marginBottom: 14 },
   detailRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },

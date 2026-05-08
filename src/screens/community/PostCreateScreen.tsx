@@ -3,26 +3,29 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   SafeAreaView, ScrollView, Alert, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { COLORS, CATEGORIES } from '@/constants';
 import { createPost } from '@/services/communityService';
 
-// 연관 품목 대표 목록
+// 연관 품목 대표 목록 (5자리 품목 코드 기준)
 const QUICK_ITEMS = [
-  { code: '111', name: '배추' }, { code: '112', name: '무' },
-  { code: '151', name: '양파' }, { code: '152', name: '마늘' },
-  { code: '211', name: '사과' }, { code: '222', name: '딸기' },
-  { code: '511', name: '쌀' },   { code: '441', name: '계란' },
+  { code: '10001', name: '배추' }, { code: '10021', name: '무' },
+  { code: '10033', name: '양파' }, { code: '10034', name: '마늘' },
+  { code: '10031', name: '대파' }, { code: '10023', name: '감자' },
+  { code: '20011', name: '사과' }, { code: '20041', name: '딸기' },
+  { code: '50011', name: '쌀' },   { code: '40031', name: '계란' },
+  { code: '10041', name: '풋고추'},{ code: '10054', name: '토마토'},
 ];
 
 export default function PostCreateScreen() {
   const navigation  = useNavigation();
   const queryClient = useQueryClient();
+  const route       = useRoute<any>();
 
   const [title,       setTitle]       = useState('');
   const [content,     setContent]     = useState('');
-  const [itemCode,    setItemCode]    = useState<string | null>(null);
+  const [itemCode,    setItemCode]    = useState<string | null>(route.params?.itemCode ?? null);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
   const mutation = useMutation({
@@ -33,12 +36,10 @@ export default function PostCreateScreen() {
         { text: '확인', onPress: () => navigation.goBack() },
       ]);
     },
-    onError: () => {
-      // 백엔드 없을 때 목 성공 처리
-      queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
-      Alert.alert('완료', '게시글이 등록됐습니다. (개발 모드)', [
-        { text: '확인', onPress: () => navigation.goBack() },
-      ]);
+    onError: (err: any) => {
+      const status = err?.response?.status;
+      const msg = status === 401 ? '로그인이 필요합니다.' : `등록 실패 (${status ?? '네트워크 오류'})`;
+      Alert.alert('오류', msg);
     },
   });
 

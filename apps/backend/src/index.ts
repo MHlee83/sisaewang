@@ -5,6 +5,19 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
+// ── Sentry (선택적 — SENTRY_DSN 환경변수 있을 때만 활성화) ──
+let Sentry: any = null;
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV ?? 'development',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+    });
+  } catch { /* sentry not installed */ }
+}
+
 import { prisma } from './utils/prisma';
 import { redis, isRedisEnabled } from './utils/redis';
 import { logger } from './utils/logger';
@@ -25,19 +38,49 @@ const app = express();
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const API_VERSION = process.env.API_VERSION ?? 'v1';
 
-app.use(helmet());
-app.use(cors({
-    origin: (process.env.ALLOWED_ORIGINS ?? '*').split(','),
-    credentials: true,
+// ── 보안 헤더 ──
+app.use(helmet({
+  contentSecurityPolicy: false, // API 서버이므로 CSP 불필요
+  crossOriginEmbedderPolicy: false,
 }));
+
+// ── CORS: 프로덕션에선 화이트리스트만 허용 ──
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : null; // null = 개발 환경 전체 허용
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // 모바일 앱은 origin이 없으므로 null 허용
+    if (!origin) return callback(null, true);
+    if (!allowedOrigins) return callback(null, true); // 개발 환경
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS 차단: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Secret'],
+}));
+
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
 
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: { error: 'TOO_MANY_REQUESTS', message: '잠시 후 다시 시도해주세요.' },
-}));
+// ── 기본 Rate Limit (전체) ──
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'TOO_MANY_REQUESTS', message: '잠시 후 다시 시도해주세요.' },
+});
+app.use(globalLimiter);
+
+// ── 엄격한 Rate Limit (커뮤니티 글쓰기 등 쓰기 작업) ──
+const writeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1시간
+  max: 30,
+  message: { error: 'TOO_MANY_WRITES', message: '작성 한도를 초과했습니다. 1시간 후 다시 시도해주세요.' },
+});
 
 // ===== 루트 (랜딩 페이지) =====
 app.get('/', (_req, res) => {
@@ -320,7 +363,7 @@ router.use('/users',           userRoutes);
 router.use('/users/me/alerts', alertRoutes);
 router.use('/recommendations', recommendationRoutes);
 router.use('/subscriptions',   subscriptionRoutes);
-router.use('/community',       communityRoutes);
+router.use('/community',       writeLimiter, communityRoutes);
 
 // ===== 관리자 라우트 (ADMIN_SECRET 필요) =====
 const adminGuard = (req: express.Request, res: express.Response): boolean => {
@@ -392,8 +435,14 @@ app.use(`/${API_VERSION}`, router);
 
 // ===== 에러 핸들러 =====
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: '서버 오류가 발생했습니다.' });
+  logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
+  if (Sentry) Sentry.captureException(err);
+  // CORS 에러는 403
+  if (err.message.startsWith('CORS 차단')) {
+    res.status(403).json({ error: 'CORS_BLOCKED' });
+    return;
+  }
+  res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: '서버 오류가 발생했습니다.' });
 });
 
 // ===== 서버 시작 =====

@@ -16,6 +16,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/utils/firebase';
+import { useAuthStore } from '@/store/authStore';
 import { COLORS } from '@/constants';
 
 type Mode = 'login' | 'signup';
@@ -26,6 +27,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
+  const { completeOnboarding } = useAuthStore();
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -120,6 +122,11 @@ export default function AuthScreen() {
               : '이미 계정이 있으신가요? 로그인'}
           </Text>
         </TouchableOpacity>
+
+        {/* 테스트 접속 */}
+        <TouchableOpacity style={styles.testBtn} onPress={completeOnboarding}>
+          <Text style={styles.testBtnText}>🧪 테스트 접속</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -207,5 +214,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     textDecorationLine: 'underline',
+  },
+  testBtn: {
+    marginTop: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#F5F5F5',
+  },
+  testBtnText: {
+    fontSize: 13,
+    color: '#888',
+    fontWeight: '600',
   },
 });
