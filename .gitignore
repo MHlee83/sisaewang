@@ -12,5 +12,4 @@ android/
 # Sensitive credentials (never commit)
 docs/supabase-prod-credentials.md
 google-play-service-account.json
-# Firebase service account keys
 sisaewang-e864a-*.json

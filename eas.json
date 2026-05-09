@@ -35,7 +35,7 @@
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.sisaewang.kr/v1",
+        "EXPO_PUBLIC_API_URL": "https://sisaewang-production.up.railway.app/v1",
         "EXPO_PUBLIC_ENV": "production",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAAK4g8DY6VbYnl_gqpe3lT58s4fr2HkJA",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sisaewang-e864a.firebaseapp.com",
