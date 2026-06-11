@@ -435,13 +435,13 @@ app.use(`/${API_VERSION}`, router);
 
 // ===== 법무 문서 정적 서빙 =====
 import path from 'path';
-app.use(express.static(path.join(__dirname, '../public')));
-// 직접 URL 접근용 라우트
+// nixpacks 빌드 시 public/ → dist/public/ 으로 복사됨
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/privacy', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/privacy-policy.html'));
+  res.sendFile(path.join(__dirname, 'public/privacy-policy.html'));
 });
 app.get('/terms', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../public/terms-of-service.html'));
+  res.sendFile(path.join(__dirname, 'public/terms-of-service.html'));
 });
 
 // ===== 에러 핸들러 =====
