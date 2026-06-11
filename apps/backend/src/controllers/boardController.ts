@@ -1,4 +1,4 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { collectAuctionPrices } from '../jobs/collectAuction';
 import dayjs from 'dayjs';
@@ -7,7 +7,7 @@ export async function triggerCollect(req: Request, res: Response): Promise<void>
   const key = req.query.key as string;
   if (key !== process.env.JWT_SECRET) { res.status(403).json({ error: 'FORBIDDEN' }); return; }
   const date = (req.query.date as string) || dayjs().format('YYYYMMDD');
-  await collectAuctionPrices(date);
+  try { try { await collectAuctionPrices(date); } catch (e) { res.status(500).json({ error: 'COLLECT_FAILED', message: (e as Error).message }); return; } } catch (e) { res.status(500).json({ error: 'COLLECT_FAILED', message: (e as Error).message }); return; }
   const count = await prisma.auctionPrice.count();
   res.json({ ok: true, date, totalAuctionRows: count });
 }
