@@ -433,6 +433,17 @@ router.get('/admin/kamis-test', async (req, res) => {
 
 app.use(`/${API_VERSION}`, router);
 
+// ===== 법무 문서 정적 서빙 =====
+import path from 'path';
+app.use(express.static(path.join(__dirname, '../public')));
+// 직접 URL 접근용 라우트
+app.get('/privacy', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/privacy-policy.html'));
+});
+app.get('/terms', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/terms-of-service.html'));
+});
+
 // ===== 에러 핸들러 =====
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error(`Unhandled error: ${err.message}`, { stack: err.stack });
