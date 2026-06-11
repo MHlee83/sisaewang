@@ -6,6 +6,8 @@ import {
   compareMarketPrices,
 } from '../controllers/priceController';
 
+import { getPriceBoard, triggerCollect } from '../controllers/boardController';
+
 const router = Router();
 
 // GET /v1/prices/auction
@@ -19,5 +21,8 @@ router.get('/survey', getSurveyPrices);
 
 // GET /v1/prices/compare
 router.get('/compare', compareMarketPrices);
+
+router.get('/board', getPriceBoard);
+router.get('/collect', triggerCollect);
 
 export default router;
