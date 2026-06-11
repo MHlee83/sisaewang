@@ -1,15 +1,22 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
-import { collectAuctionPrices } from '../jobs/collectAuction';
+import axios from 'axios';
 import dayjs from 'dayjs';
 
 export async function triggerCollect(req: Request, res: Response): Promise<void> {
   const key = req.query.key as string;
   if (key !== process.env.JWT_SECRET) { res.status(403).json({ error: 'FORBIDDEN' }); return; }
   const date = (req.query.date as string) || dayjs().format('YYYYMMDD');
-  try { try { await collectAuctionPrices(date); } catch (e) { res.status(500).json({ error: 'COLLECT_FAILED', message: (e as Error).message }); return; } } catch (e) { res.status(500).json({ error: 'COLLECT_FAILED', message: (e as Error).message }); return; }
-  const count = await prisma.auctionPrice.count();
-  res.json({ ok: true, date, totalAuctionRows: count });
+  const whsal = (req.query.whsal as string) || '110001';
+  try {
+    const r = await axios.get('https://apis.data.go.kr/B552895/farmAuction/getAuctionResultList', {
+      params: { serviceKey: process.env.DATA_GO_KR_API_KEY, condSaleDate: date, condWhsalCd: whsal, pageNo: 1, numOfRows: 5 },
+      timeout: 15000,
+    });
+    res.json({ ok: true, status: r.status, sample: r.data });
+  } catch (e: any) {
+    res.json({ ok: false, status: e?.response?.status ?? null, data: e?.response?.data ?? null, msg: e?.message ?? String(e) });
+  }
 }
 
 export async function getPriceBoard(req: Request, res: Response): Promise<void> {
