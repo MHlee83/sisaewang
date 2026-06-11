@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "npm run build && npx prisma migrate deploy && npx prisma db seed && npm start"
+startCommand = "npm run build && npx prisma db push --skip-generate && npx prisma db seed && npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
