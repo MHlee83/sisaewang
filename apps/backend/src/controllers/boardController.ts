@@ -1,66 +1,10 @@
-﻿import { Request, Response } from 'express';
-import { prisma } from '../utils/prisma';
-import axios from 'axios';
-import dayjs from 'dayjs';
-
-export async function triggerCollect(req: Request, res: Response): Promise<void> {
-  const key = req.query.key as string;
-  if (key !== process.env.JWT_SECRET) { res.status(403).json({ error: 'FORBIDDEN' }); return; }
-  const date = (req.query.date as string) || dayjs().format('YYYYMMDD');
-  const whsal = (req.query.whsal as string) || '110001';
-  try {
-    const r = await axios.get('https://apis.data.go.kr/B552895/farmAuction/getAuctionResultList', {
-      params: { serviceKey: process.env.DATA_GO_KR_API_KEY, condSaleDate: date, condWhsalCd: whsal, pageNo: 1, numOfRows: 5 },
-      timeout: 15000,
-    });
-    res.json({ ok: true, status: r.status, sample: r.data });
-  } catch (e: any) {
-    res.json({ ok: false, status: e?.response?.status ?? null, data: e?.response?.data ?? null, msg: e?.message ?? String(e) });
-  }
-}
-
-export async function getPriceBoard(req: Request, res: Response): Promise<void> {
-  const marketCode = (req.query.marketCode as string) || '110001';
-  const market = await prisma.market.findUnique({ where: { code: marketCode } });
-  if (!market) { res.json({ items: [], saleDate: null }); return; }
-
-  const latest = await prisma.auctionPrice.findFirst({
-    where: { marketId: market.id }, orderBy: { saleDate: 'desc' }, select: { saleDate: true },
-  });
-  if (!latest) { res.json({ items: [], saleDate: null }); return; }
-  const saleDate = latest.saleDate;
-
-  const prevDateRow = await prisma.auctionPrice.findFirst({
-    where: { marketId: market.id, saleDate: { lt: saleDate } }, orderBy: { saleDate: 'desc' }, select: { saleDate: true },
-  });
-
-  const todayRows = await prisma.auctionPrice.findMany({ where: { marketId: market.id, saleDate }, include: { item: true } });
-  const prevRows = prevDateRow ? await prisma.auctionPrice.findMany({ where: { marketId: market.id, saleDate: prevDateRow.saleDate } }) : [];
-  const prevByItem = new Map<number, number>();
-  for (const r of prevRows) prevByItem.set(r.itemId, Number(r.avgPrice));
-
-  const yearAgg = await prisma.auctionPrice.groupBy({ by: ['itemId'], where: { marketId: market.id }, _avg: { avgPrice: true } });
-  const yearByItem = new Map<number, number>();
-  for (const y of yearAgg) yearByItem.set(y.itemId, Number(y._avg.avgPrice ?? 0));
-
-  const byItem = new Map<number, any>();
-  for (const r of todayRows) { const ex = byItem.get(r.itemId); if (!ex || r.gradeCode === '\uC0C1') byItem.set(r.itemId, r); }
-
-  const items = [...byItem.values()].map((r) => ({
-    id: r.id.toString(),
-    itemCode: r.item.itemCode,
-    itemName: r.item.itemName,
-    category: r.item.categoryCode,
-    gradeCode: r.gradeCode ?? '\uC0C1',
-    avgPrice: Number(r.avgPrice),
-    minPrice: Number(r.minPrice),
-    maxPrice: Number(r.maxPrice),
-    totalQty: Number(r.totalQty),
-    prevPrice: prevByItem.get(r.itemId) ?? Number(r.avgPrice),
-    avgYearPrice: yearByItem.get(r.itemId) ?? Number(r.avgPrice),
-    marketName: market.name,
-    saleDate: dayjs(saleDate).format('YYYY-MM-DD'),
-  }));
-
-  res.json({ items, saleDate: dayjs(saleDate).format('YYYY-MM-DD') });
-}
+﻿import { Request, Response } from 'express'; import { prisma } from '../utils/prisma'; import axios from 'axios'; import dayjs from 'dayjs';
+export async function triggerCollect(req: Request, res: Response): Promise<void> { const key = req.query.key as string; if (key !== process.env.JWT_SECRET) { res.status(403).json({ error: 'FORBIDDEN' }); return; } const raw = (req.query.date as string) || dayjs().format('YYYYMMDD'); const date = raw.includes('-') ? raw : raw.slice(0,4)+'-'+raw.slice(4,6)+'-'+raw.slice(6,8); const whsal = (req.query.whsal as string) || '110001'; try { const params = new URLSearchParams({ serviceKey: process.env.DATA_GO_KR_API_KEY ?? '', pageNo: '1', numOfRows: '5', returnType: 'json' }); params.append('cond[trd_clcln_ymd::EQ]', date); params.append('cond[whsl_mrkt_cd::EQ]', whsal); const r = await axios.get('https://apis.data.go.kr/B552845/katOrigin/trades?' + params.toString(), { timeout: 15000 }); res.json({ ok: true, status: r.status, sample: r.data }); } catch (e: any) { res.json({ ok: false, status: e?.response?.status ?? null, data: e?.response?.data ?? null, msg: e?.message ?? String(e) }); } }
+export async function getPriceBoard(req: Request, res: Response): Promise<void> { const marketCode = (req.query.marketCode as string) || '110001'; const market = await prisma.market.findUnique({ where: { code: marketCode } }); if (!market) { res.json({ items: [], saleDate: null }); return; }
+const latest = await prisma.auctionPrice.findFirst({ where: { marketId: market.id }, orderBy: { saleDate: 'desc' }, select: { saleDate: true }, }); if (!latest) { res.json({ items: [], saleDate: null }); return; } const saleDate = latest.saleDate;
+const prevDateRow = await prisma.auctionPrice.findFirst({ where: { marketId: market.id, saleDate: { lt: saleDate } }, orderBy: { saleDate: 'desc' }, select: { saleDate: true }, });
+const todayRows = await prisma.auctionPrice.findMany({ where: { marketId: market.id, saleDate }, include: { item: true } }); const prevRows = prevDateRow ? await prisma.auctionPrice.findMany({ where: { marketId: market.id, saleDate: prevDateRow.saleDate } }) : []; const prevByItem = new Map<number, number>(); for (const r of prevRows) prevByItem.set(r.itemId, Number(r.avgPrice));
+const yearAgg = await prisma.auctionPrice.groupBy({ by: ['itemId'], where: { marketId: market.id }, _avg: { avgPrice: true } }); const yearByItem = new Map<number, number>(); for (const y of yearAgg) yearByItem.set(y.itemId, Number(y._avg.avgPrice ?? 0));
+const byItem = new Map<number, any>(); for (const r of todayRows) { const ex = byItem.get(r.itemId); if (!ex || r.gradeCode === '\uC0C1') byItem.set(r.itemId, r); }
+const items = [...byItem.values()].map((r) => ({ id: r.id.toString(), itemCode: r.item.itemCode, itemName: r.item.itemName, category: r.item.categoryCode, gradeCode: r.gradeCode ?? '\uC0C1', avgPrice: Number(r.avgPrice), minPrice: Number(r.minPrice), maxPrice: Number(r.maxPrice), totalQty: Number(r.totalQty), prevPrice: prevByItem.get(r.itemId) ?? Number(r.avgPrice), avgYearPrice: yearByItem.get(r.itemId) ?? Number(r.avgPrice), marketName: market.name, saleDate: dayjs(saleDate).format('YYYY-MM-DD'), }));
+res.json({ items, saleDate: dayjs(saleDate).format('YYYY-MM-DD') }); }
