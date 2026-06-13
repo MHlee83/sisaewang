@@ -1,7 +1,7 @@
 // 개인정보처리방침 / 이용약관 정적 페이지 (Play Console 제출용)
 // helmet CSP 영향을 피하려고 index.ts 최상단(보안 미들웨어 이전)에서 서빙한다.
 
-const CONTACT_EMAIL = 'boongss@psynet.co.kr';
+const CONTACT_EMAIL = 'kdatalab.dev@gmail.com';
 const SERVICE_NAME = '시세왕';
 const EFFECTIVE_DATE = '2026-06-13';
 
