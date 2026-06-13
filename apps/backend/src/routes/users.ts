@@ -6,6 +6,7 @@ import {
   updateMe,
   updateFcmToken,
   deleteMe,
+  bindDevice,
   getUserItems,
   addUserItem,
   removeUserItem,
@@ -25,6 +26,9 @@ router.delete('/me', requireAuth, deleteMe);
 
 // PATCH /v1/users/me/fcm-token
 router.patch('/me/fcm-token', requireAuth, updateFcmToken);
+
+// POST /v1/users/me/device — 기기 ID 바인딩
+router.post('/me/device', requireAuth, bindDevice);
 
 // GET /v1/users/me/items
 router.get('/me/items', requireAuth, getUserItems);

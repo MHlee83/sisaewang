@@ -18,6 +18,7 @@ import alertRoutes from './routes/alerts';
 import recommendationRoutes from './routes/recommendations';
 import subscriptionRoutes from './routes/subscriptions';
 import communityRoutes from './routes/community';
+import authRoutes from './routes/auth';
 import { PRIVACY_HTML, TERMS_HTML } from './legal';
 
 const app = express();
@@ -62,6 +63,7 @@ app.get('/health', async (_req, res) => {
 // ===== API 라우터 =====
 const router = express.Router();
 
+router.use('/auth',            authRoutes);
 router.use('/prices',          priceRoutes);
 router.use('/items',           itemRoutes);
 router.use('/users',           userRoutes);

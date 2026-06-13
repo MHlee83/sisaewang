@@ -116,6 +116,25 @@ export async function updateFcmToken(req: AuthRequest, res: Response): Promise<v
   res.status(204).send();
 }
 
+// ── POST /v1/users/me/device — 기기 ID 바인딩 (가입 직후 호출) ────
+// 기기당 1계정: 이미 다른 계정이 쓰는 기기면 409. 본인 계정엔 최초 1회만 설정.
+export async function bindDevice(req: AuthRequest, res: Response): Promise<void> {
+  const { deviceId } = req.body as { deviceId?: string };
+  if (!deviceId) { res.status(400).json({ error: 'INVALID_INPUT' }); return; }
+
+  const owner = await prisma.user.findUnique({ where: { deviceId } });
+  if (owner && owner.id !== req.user!.id) {
+    res.status(409).json({ error: 'DEVICE_TAKEN', message: '이미 다른 계정에 등록된 기기입니다.' });
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: req.user!.id },
+    data:  { deviceId },
+  });
+  res.status(204).send();
+}
+
 // ── DELETE /v1/users/me — 회원 탈퇴 ─────────────────────────────
 // 연관 데이터를 정리하고 사용자 레코드를 삭제한 뒤 Firebase 계정까지 제거한다.
 // 작성한 게시글/댓글은 작성자만 NULL로 비식별 처리되어 보존된다(스키마 onDelete: SetNull).

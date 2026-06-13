@@ -100,6 +100,7 @@ model User {
   uid            String    @unique @db.VarChar(128)    // Firebase UID
   email          String?   @db.VarChar(255)
   nickname       String?   @db.VarChar(50)
+  deviceId       String?   @unique @db.VarChar(128)    // Android ID — 기기당 1계정 제한 / 이메일 찾기용
   userType       String    @default("CONSUMER") @db.VarChar(20)  // CONSUMER/FARMER/BUYER
   fcmToken       String?   @db.Text
   isPremium      Boolean   @default(false)
