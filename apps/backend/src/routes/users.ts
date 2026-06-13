@@ -5,6 +5,7 @@ import {
   getMe,
   updateMe,
   updateFcmToken,
+  deleteMe,
   getUserItems,
   addUserItem,
   removeUserItem,
@@ -18,6 +19,9 @@ router.get('/me', requireAuth, getMe);
 
 // PATCH /v1/users/me — userType 업데이트
 router.patch('/me', requireAuth, updateMe);
+
+// DELETE /v1/users/me — 회원 탈퇴
+router.delete('/me', requireAuth, deleteMe);
 
 // PATCH /v1/users/me/fcm-token
 router.patch('/me/fcm-token', requireAuth, updateFcmToken);

@@ -19,6 +19,11 @@ export async function verifyFirebaseToken(token: string): Promise<admin.auth.Dec
   return admin.auth().verifyIdToken(token);
 }
 
+// ===== 사용자 계정 삭제 (회원 탈퇴) =====
+export async function deleteFirebaseUser(uid: string): Promise<void> {
+  await admin.auth().deleteUser(uid);
+}
+
 // ===== FCM 푸시 발송 =====
 export async function sendPushNotification(params: {
   fcmToken: string;

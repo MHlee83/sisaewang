@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { AuthRequest } from '../middlewares/auth';
+import { deleteFirebaseUser } from '../utils/firebase';
+import { logger } from '../utils/logger';
 import { z } from 'zod';
 
 export async function getMe(req: AuthRequest, res: Response): Promise<void> {
@@ -111,6 +113,39 @@ export async function updateFcmToken(req: AuthRequest, res: Response): Promise<v
     where: { id: req.user!.id },
     data:  { fcmToken },
   });
+  res.status(204).send();
+}
+
+// ── DELETE /v1/users/me — 회원 탈퇴 ─────────────────────────────
+// 연관 데이터를 정리하고 사용자 레코드를 삭제한 뒤 Firebase 계정까지 제거한다.
+// 작성한 게시글/댓글은 작성자만 NULL로 비식별 처리되어 보존된다(스키마 onDelete: SetNull).
+export async function deleteMe(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.id;
+  const uid    = req.user!.uid;
+
+  try {
+    // onDelete가 지정되지 않은 관계는 User 삭제 전에 직접 제거해야 FK 제약을 통과한다.
+    await prisma.$transaction([
+      prisma.alertLog.deleteMany({ where: { userId } }),
+      prisma.communityReport.deleteMany({ where: { reporterId: userId } }),
+      prisma.subscription.deleteMany({ where: { userId } }),
+      // User 삭제 → userItems / alerts / communityLikes 는 Cascade,
+      //            communityPosts / communityComments 의 authorId 는 SetNull
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+  } catch (err) {
+    logger.error('회원 탈퇴 DB 처리 실패:', err);
+    res.status(500).json({ error: 'DELETE_FAILED', message: '회원 탈퇴 처리 중 오류가 발생했습니다.' });
+    return;
+  }
+
+  // Firebase 계정 삭제 (DB는 이미 삭제됨 — 실패해도 탈퇴는 성립, best-effort)
+  try {
+    await deleteFirebaseUser(uid);
+  } catch (err) {
+    logger.error('회원 탈퇴 Firebase 계정 삭제 실패:', { uid, err });
+  }
+
   res.status(204).send();
 }
   
