@@ -18,10 +18,19 @@ import alertRoutes from './routes/alerts';
 import recommendationRoutes from './routes/recommendations';
 import subscriptionRoutes from './routes/subscriptions';
 import communityRoutes from './routes/community';
+import { PRIVACY_HTML, TERMS_HTML } from './legal';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const API_VERSION = process.env.API_VERSION ?? 'v1';
+
+// ===== 법적 고지 페이지 (helmet/CSP 이전에 등록해 정상 렌더 보장) =====
+app.get(['/privacy', '/privacy-policy'], (_req, res) => {
+    res.type('html').send(PRIVACY_HTML);
+});
+app.get(['/terms', '/tos'], (_req, res) => {
+    res.type('html').send(TERMS_HTML);
+});
 
 app.use(helmet());
 app.use(cors({
